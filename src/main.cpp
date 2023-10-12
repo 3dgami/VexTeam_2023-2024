@@ -95,7 +95,9 @@ void driveTrain(int distance)
 	int startPos = getPos();
 	double kp = 17.0;
 	double ki = 0.2;
-	double kd = 5.0;
+	double kd = -2.50;   /*derivitive should control and stop overshooting this can be done
+						  by having kd be negative or having a (P + I - D) for the output PS 
+						*/
 	double P;
 	double I;
 	double D;
@@ -113,7 +115,7 @@ void driveTrain(int distance)
 
 	
 
-	while (errorTerm > 1 )
+	while (errorTerm != 0)
 	{
 		errorTerm = abs((distance) + startPos) - getPos();
 
@@ -128,16 +130,19 @@ void driveTrain(int distance)
 		P = errorTerm * kp;
 		I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = ((P + I + D) * sign);
+		int output = (((P + I + D) + 200)* sign);
+
+		printf("O=%D, P=%0.2f, D=%0.2f, Err=%d\n",output, P, D, errorTerm);
 
 		driveL_train.move_voltage(output);
 		driveR_train.move_voltage(output);
 
 		lastError = errorTerm;
-		pros::delay(100);
+		pros::delay(20);
 	}
 	driveL_train.move_voltage(0);
 	driveR_train.move_voltage(0);
+	printf("End\nErr=%d", errorTerm);
 
 	return;
 }
@@ -145,14 +150,16 @@ void driveTrain(int distance)
 void turn(int angle)
 {
 	driveL_train.set_reversed(false);
-	double CircleTicks = 1980.00;
-	double turnTicks = (CircleTicks/360) * angle;
+	double CircleTicks = 1950.0;
+	int turnTicks = floor((CircleTicks/360) * angle);
 	
 
 	int startPos = getPos();
-	double kp = 10.0;
+	double kp = 8.2;
 	//double ki = 0.2;
-	double kd = 1.00;
+	double kd = -0.15; 	/*derivitive should control and stop overshooting this can be done
+						  by having kd be negative or having a (P + I - D) for the output
+						*/
 	double P;
 	//double I;
 	double D;
@@ -160,7 +167,6 @@ void turn(int angle)
 	int errorTerm;
 	int errorTotal = 0;
 	int sign = 1;
-	//printf("step err=%d, errT=%d, P=%.02f, D=%.02f", errorTerm, errorTotal, P, D);
 
 	printf("start\n");
 	while (errorTerm > 0)
@@ -178,15 +184,15 @@ void turn(int angle)
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (P + D) + 975;
+		int output = (P + D) + 825;
 
-		printf("step err=%d, errT=%d, P=%.02f, D=%.02f, O=%d\n", errorTerm, errorTotal, P, D, output);
+		printf("step err=%d, P=%.02f, D=%.02f, O=%d\n, turn=%d", errorTerm, P, D, output, turnTicks);
 
 		driveL_train.move_voltage(output);
 		driveR_train.move_voltage(output);
 
 		lastError = errorTerm;
-		pros::delay(20);
+		pros::delay(10);
 	}
 	driveL_train.move_voltage(0);
 	driveR_train.move_voltage(0);
@@ -194,7 +200,7 @@ void turn(int angle)
 
 	pros::delay(1000);
 	errorTerm = abs((turnTicks) + startPos) - getPos();
-	printf("\nDone err=%d\n", errorTerm);
+	printf("\nDone err=%d\n, O=%d", errorTerm, turnTicks);
 
 	return;
 }
@@ -204,21 +210,19 @@ void opcontrol()
 {
 
 	driveL_train.set_reversed(true);
-	int distance = 1450;// TILE
-	turn(180);
+	int distance = 1800;// TILE
+	/*turn(180);
 	pros::delay(500);
 	turn(180);
-	/*pros::delay(500);
+	pros::delay(500);
 	driveTrain(1450);
 	pros::delay(500);
 	turn(90);
 	pros::delay(500);
 	turn(90);
-	pros::delay(500);
-	turn(180);
-	pros::delay(500);
-	driveTrain(1450);
-	*/
+	pros::delay(500);*/
+	driveTrain(distance);
+
 
 
 
