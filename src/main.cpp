@@ -60,6 +60,7 @@ void autonomous() {}
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
+pros::Controller master{CONTROLLER_MASTER};	
 pros::Motor right_front(11);
 pros::Motor left_front(1);
 pros::Motor left_back(10);
@@ -67,17 +68,71 @@ pros::Motor right_back(20);
 pros::Motor_Group driveL_train({left_front, left_back});
 pros::Motor_Group driveR_train({right_front, right_back});
 
-int getLeftPos()
+void opcontrol(){
+
+	pros::Controller master(CONTROLLER_MASTER);
+
+	int dead_Zone = 10;
+	
+	int leftSpeed = 0;
+	int rightSpeed = 0;
+	int analogY = master.get_analog(ANALOG_LEFT_Y);
+	int analogX = master.get_analog(ANALOG_LEFT_X);
+
+	if(analogY == 0 && abs(analogX) > dead_Zone)
+	{
+		leftSpeed = analogY;	
+		rightSpeed = analogX;
+	}
+	else if(analogX >= dead_Zone && analogY > dead_Zone)
+	{
+		leftSpeed = analogY;
+		rightSpeed = analogY - analogX;
+	}
+	else if(analogX < -dead_Zone && analogY > dead_Zone)
+	{
+		leftSpeed = analogY + analogX;
+		rightSpeed = analogY;
+	}
+	else if(analogX >= dead_Zone && analogY < -dead_Zone)
+	{
+		leftSpeed = analogY;
+		rightSpeed = analogY + analogX;
+	}
+	else if(analogX < -dead_Zone && analogY < - dead_Zone)
+	{
+		leftSpeed = analogY - analogX;
+		rightSpeed = analogY;
+	}
+	else if(analogX == 0 && abs(analogY) > dead_Zone)
+	{
+		leftSpeed = analogY;
+		rightSpeed = analogY;
+	}
+
+	if (master.get_digital(DIGITAL_A))
+	{
+		printf("Digital_A");
+	}
+
+	if (master.get_digital(DIGITAL_B))
+	{
+		printf("Digital_B");
+	}
+}
+
+
+double getLeftPos()
 {
 	return (left_front.get_position() + left_back.get_position()) / 2;
 }
 
-int getRightPos()
+double getRightPos()
 {
 	return (right_front.get_position() + right_back.get_position()) / 2;
 }
 
-int getPos()
+double getPos()
 {
 	return (getLeftPos() + getRightPos()) / 2;
 }
@@ -93,9 +148,9 @@ void driveU_train(int distance, int velocity)
 void driveTrain(int distance)
 {
 	int startPos = getPos();
-	double kp = 17.0;
+	double kp = 15.0;
 	double ki = 0.2;
-	double kd = -2.50;   /*derivitive should control and stop overshooting this can be done
+	double kd = -0.15;   /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output PS 
 						*/
 	double P;
@@ -115,7 +170,7 @@ void driveTrain(int distance)
 
 	
 
-	while (errorTerm != 0)
+	while (errorTerm > 1)
 	{
 		errorTerm = abs((distance) + startPos) - getPos();
 
@@ -150,14 +205,13 @@ void driveTrain(int distance)
 void turn(int angle)
 {
 	driveL_train.set_reversed(false);
-	double CircleTicks = 1950.0;
+	double CircleTicks = 1930;
 	int turnTicks = floor((CircleTicks/360) * angle);
-	
 
 	int startPos = getPos();
-	double kp = 8.2;
+	double kp = 9.0;
 	//double ki = 0.2;
-	double kd = -0.15; 	/*derivitive should control and stop overshooting this can be done
+	double kd = -0.05; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
 						*/
 	double P;
@@ -184,7 +238,7 @@ void turn(int angle)
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (P + D) + 825;
+		int output = (P + D) + 900;
 
 		printf("step err=%d, P=%.02f, D=%.02f, O=%d\n, turn=%d", errorTerm, P, D, output, turnTicks);
 
@@ -211,18 +265,19 @@ void opcontrol()
 
 	driveL_train.set_reversed(true);
 	int distance = 1800;// TILE
-	/*turn(180);
+	turn(180);
 	pros::delay(500);
 	turn(180);
 	pros::delay(500);
-	driveTrain(1450);
-	pros::delay(500);
-	turn(90);
-	pros::delay(500);
-	turn(90);
-	pros::delay(500);*/
 	driveTrain(distance);
-
+	pros::delay(500);
+	turn(90);
+	pros::delay(500);
+	turn(90);
+	pros::delay(500);
+	driveTrain(distance);
+	pros::delay(500);
+	turn(180);
 
 
 
