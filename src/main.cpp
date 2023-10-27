@@ -1,5 +1,15 @@
 #include "main.h"
 
+pros::ADIAnalogOut piston (1);
+pros::Controller master{CONTROLLER_MASTER};	
+pros::Motor intake(13);
+pros::Motor launch(12);	//update all motor ports
+pros::Motor right_front(11);
+pros::Motor left_front(1);
+pros::Motor left_back(10);
+pros::Motor right_back(20);
+pros::Motor_Group driveL_train({left_front, left_back});
+pros::Motor_Group driveR_train({right_front, right_back});
 /**
  * A callback function for LLEMU's center button.
  *
@@ -60,67 +70,13 @@ void autonomous() {}
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
-pros::Controller master{CONTROLLER_MASTER};	
-pros::Motor right_front(11);
-pros::Motor left_front(1);
-pros::Motor left_back(10);
-pros::Motor right_back(20);
-pros::Motor_Group driveL_train({left_front, left_back});
-pros::Motor_Group driveR_train({right_front, right_back});
 
-void opcontrol(){
+void driveU_train( int Rspeed, int Lspeed)
+{
+	driveL_train.move(Lspeed);
+	driveR_train.move(Rspeed);
 
-	pros::Controller master(CONTROLLER_MASTER);
-
-	int dead_Zone = 10;
-	
-	int leftSpeed = 0;
-	int rightSpeed = 0;
-	int analogY = master.get_analog(ANALOG_LEFT_Y);
-	int analogX = master.get_analog(ANALOG_LEFT_X);
-
-	if(analogY == 0 && abs(analogX) > dead_Zone)
-	{
-		leftSpeed = analogY;	
-		rightSpeed = analogX;
-	}
-	else if(analogX >= dead_Zone && analogY > dead_Zone)
-	{
-		leftSpeed = analogY;
-		rightSpeed = analogY - analogX;
-	}
-	else if(analogX < -dead_Zone && analogY > dead_Zone)
-	{
-		leftSpeed = analogY + analogX;
-		rightSpeed = analogY;
-	}
-	else if(analogX >= dead_Zone && analogY < -dead_Zone)
-	{
-		leftSpeed = analogY;
-		rightSpeed = analogY + analogX;
-	}
-	else if(analogX < -dead_Zone && analogY < - dead_Zone)
-	{
-		leftSpeed = analogY - analogX;
-		rightSpeed = analogY;
-	}
-	else if(analogX == 0 && abs(analogY) > dead_Zone)
-	{
-		leftSpeed = analogY;
-		rightSpeed = analogY;
-	}
-
-	if (master.get_digital(DIGITAL_A))
-	{
-		printf("Digital_A");
-	}
-
-	if (master.get_digital(DIGITAL_B))
-	{
-		printf("Digital_B");
-	}
 }
-
 
 double getLeftPos()
 {
@@ -136,14 +92,6 @@ double getPos()
 {
 	return (getLeftPos() + getRightPos()) / 2;
 }
-
-void driveU_train(int distance, int velocity)
-{
-	driveL_train.move_relative(distance, velocity);
-	driveR_train.move_relative(distance, velocity);
-
-}
-
 
 void driveTrain(int distance)
 {
@@ -263,7 +211,108 @@ void turn(int angle)
 void opcontrol()
 {
 
-	driveL_train.set_reversed(true);
+	pros::ADIAnalogOut piston (1);//get port
+	pros::Controller master(CONTROLLER_MASTER);
+
+	bool intakeState = false;
+	bool extend = false;
+	int dead_Zone = 10;
+
+	int leftSpeed = 0;
+	int rightSpeed = 0;
+	int analogY = master.get_analog(ANALOG_LEFT_Y);
+	int analogX = master.get_analog(ANALOG_LEFT_X);
+
+	while(true)
+	{
+		
+		if(analogY == 0 && abs(analogX) > dead_Zone)
+		{
+			leftSpeed = analogY;	
+			rightSpeed = analogX;
+		}
+		else if(analogX >= dead_Zone && analogY > dead_Zone)
+		{
+			leftSpeed = analogY;
+			rightSpeed = analogY - analogX;
+		}
+		else if(analogX < -dead_Zone && analogY > dead_Zone)
+		{
+			leftSpeed = analogY + analogX;
+			rightSpeed = analogY;
+		}
+		else if(analogX >= dead_Zone && analogY < -dead_Zone)
+		{
+			leftSpeed = analogY;
+			rightSpeed = analogY + analogX;
+		}
+		else if(analogX < -dead_Zone && analogY < - dead_Zone)
+		{
+			leftSpeed = analogY - analogX;
+			rightSpeed = analogY;
+		}
+		else if(analogX == 0 && abs(analogY) > dead_Zone)
+		{
+			leftSpeed = analogY;
+			rightSpeed = analogY;
+		}
+
+		if (master.get_digital(DIGITAL_L1))
+		{
+			if (extend != true)
+			{
+				piston.set_value(false);
+				extend = false;
+			}
+			else
+			{
+				piston.set_value(true);
+				extend = true;
+			}
+		
+			printf("Digital_A Pnuematic, Extend=%d", extend);
+		}
+
+		if (master.get_digital(DIGITAL_R1))
+		{
+			launch.move_relative(1800 * 3, 100);
+			printf("Digital_B launch");
+		}
+
+		if (master.get_digital(DIGITAL_Y))
+		{	
+			
+			if (intakeState == false)
+			{
+				intake.move_velocity(200);
+				intakeState = true;
+			}
+			else
+			{
+				intake.move_velocity(0);
+				intakeState = false;
+			}
+		
+			printf("Digital_A intake intakeState=%d", intakeState);
+		}
+
+		if (master.get_digital(DIGITAL_X))
+		{
+			printf("Digital_B");
+		}
+
+		if(abs(leftSpeed) < 40 && abs(rightSpeed) < 40)
+		{
+			driveU_train(rightSpeed,leftSpeed);
+		}
+		else
+		{
+			driveU_train(rightSpeed * 1.5, leftSpeed * 1.5);
+		}
+	}
+}
+
+	/*driveL_train.set_reversed(true);
 	int distance = 1800;// TILE
 	turn(180);
 	pros::delay(500);
@@ -277,9 +326,4 @@ void opcontrol()
 	pros::delay(500);
 	driveTrain(distance);
 	pros::delay(500);
-	turn(180);
-
-
-
-}
- 
+	turn(180);*/
