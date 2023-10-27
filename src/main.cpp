@@ -1,15 +1,6 @@
 #include "main.h"
 
-pros::ADIAnalogOut piston (1);
-pros::Controller master{CONTROLLER_MASTER};	
-pros::Motor intake(13);
-pros::Motor launch(12);	//update all motor ports
-pros::Motor right_front(11);
-pros::Motor left_front(1);
-pros::Motor left_back(10);
-pros::Motor right_back(20);
-pros::Motor_Group driveL_train({left_front, left_back});
-pros::Motor_Group driveR_train({right_front, right_back});
+
 /**
  * A callback function for LLEMU's center button.
  *
@@ -70,6 +61,18 @@ void autonomous() {}
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
+
+pros::Controller master{CONTROLLER_MASTER};	
+pros::Motor intake(14);
+pros::Motor launchN(12);	//update all motor ports
+pros::Motor launchP(13);
+pros::Motor right_front(11);
+pros::Motor left_front(1);
+pros::Motor left_back(10);
+pros::Motor right_back(20);
+pros::Motor_Group driveL_train({left_front, left_back});
+pros::Motor_Group driveR_train({right_front, right_back});
+
 
 void driveU_train( int Rspeed, int Lspeed)
 {
@@ -213,53 +216,32 @@ void opcontrol()
 
 	pros::ADIAnalogOut piston (1);//get port
 	pros::Controller master(CONTROLLER_MASTER);
+	launchN.set_reversed(true);
 
 	bool intakeState = false;
 	bool extend = false;
 	int dead_Zone = 10;
 
-	int leftSpeed = 0;
-	int rightSpeed = 0;
-	int analogY = master.get_analog(ANALOG_LEFT_Y);
-	int analogX = master.get_analog(ANALOG_LEFT_X);
-
 	while(true)
 	{
 		
-		if(analogY == 0 && abs(analogX) > dead_Zone)
-		{
-			leftSpeed = analogY;	
-			rightSpeed = analogX;
-		}
-		else if(analogX >= dead_Zone && analogY > dead_Zone)
-		{
-			leftSpeed = analogY;
-			rightSpeed = analogY - analogX;
-		}
-		else if(analogX < -dead_Zone && analogY > dead_Zone)
-		{
-			leftSpeed = analogY + analogX;
-			rightSpeed = analogY;
-		}
-		else if(analogX >= dead_Zone && analogY < -dead_Zone)
-		{
-			leftSpeed = analogY;
-			rightSpeed = analogY + analogX;
-		}
-		else if(analogX < -dead_Zone && analogY < - dead_Zone)
-		{
-			leftSpeed = analogY - analogX;
-			rightSpeed = analogY;
-		}
-		else if(analogX == 0 && abs(analogY) > dead_Zone)
-		{
-			leftSpeed = analogY;
-			rightSpeed = analogY;
-		}
+		driveL_train.move(master.get_analog(ANALOG_LEFT_Y));
+		driveR_train.move(master.get_analog(ANALOG_RIGHT_Y));
+		
+		/*
+		ARCADE CONTROLL
 
-		if (master.get_digital(DIGITAL_L1))
+		int power = master.get_analog(ANALOG_LEFT_Y);
+		int turn = master.get_analog(ANALOG_RIGHT_X);
+		int left = power + turn;
+		int right = power - turn;
+		driveL_train.move(left);
+		driveR_train.move(right);
+		*/
+	
+		if (master.get_digital_new_press(DIGITAL_L1))
 		{
-			if (extend != true)
+			if (extend == true)
 			{
 				piston.set_value(false);
 				extend = false;
@@ -270,16 +252,17 @@ void opcontrol()
 				extend = true;
 			}
 		
-			printf("Digital_A Pnuematic, Extend=%d", extend);
+			printf("Digital_L1 Pnuematic, Extend=%d \n", extend);
 		}
 
-		if (master.get_digital(DIGITAL_R1))
+		if (master.get_digital_new_press(DIGITAL_R1))
 		{
-			launch.move_relative(1800 * 3, 100);
-			printf("Digital_B launch");
+			launchN.move_relative(900 * 3, 100);
+			launchP.move_relative(900 * 3, 100);
+			printf("Digital_R1 launch \n");
 		}
 
-		if (master.get_digital(DIGITAL_Y))
+		if (master.get_digital_new_press(DIGITAL_Y))
 		{	
 			
 			if (intakeState == false)
@@ -293,37 +276,14 @@ void opcontrol()
 				intakeState = false;
 			}
 		
-			printf("Digital_A intake intakeState=%d", intakeState);
+			printf("Digital_Y intake intakeState=%d \n", intakeState);
 		}
 
-		if (master.get_digital(DIGITAL_X))
+		if (master.get_digital_new_press(DIGITAL_X))
 		{
-			printf("Digital_B");
+			printf("Digital_X \n");
 		}
 
-		if(abs(leftSpeed) < 40 && abs(rightSpeed) < 40)
-		{
-			driveU_train(rightSpeed,leftSpeed);
-		}
-		else
-		{
-			driveU_train(rightSpeed * 1.5, leftSpeed * 1.5);
-		}
+		pros::delay(10);
 	}
 }
-
-	/*driveL_train.set_reversed(true);
-	int distance = 1800;// TILE
-	turn(180);
-	pros::delay(500);
-	turn(180);
-	pros::delay(500);
-	driveTrain(distance);
-	pros::delay(500);
-	turn(90);
-	pros::delay(500);
-	turn(90);
-	pros::delay(500);
-	driveTrain(distance);
-	pros::delay(500);
-	turn(180);*/
