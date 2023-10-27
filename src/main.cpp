@@ -1,6 +1,5 @@
 #include "main.h"
 
-
 /**
  * A callback function for LLEMU's center button.
  *
@@ -62,9 +61,9 @@ void autonomous() {}
  * task, not resume it from where it left off.
  */
 
-pros::Controller master{CONTROLLER_MASTER};	
+pros::Controller master{CONTROLLER_MASTER};
 pros::Motor intake(14);
-pros::Motor launchN(12);	//update all motor ports
+pros::Motor launchN(12); // update all motor ports
 pros::Motor launchP(13);
 pros::Motor right_front(11);
 pros::Motor left_front(1);
@@ -73,12 +72,10 @@ pros::Motor right_back(20);
 pros::Motor_Group driveL_train({left_front, left_back});
 pros::Motor_Group driveR_train({right_front, right_back});
 
-
-void driveU_train( int Rspeed, int Lspeed)
+void driveU_train(int Rspeed, int Lspeed)
 {
 	driveL_train.move(Lspeed);
 	driveR_train.move(Rspeed);
-
 }
 
 double getLeftPos()
@@ -101,9 +98,9 @@ void driveTrain(int distance)
 	int startPos = getPos();
 	double kp = 15.0;
 	double ki = 0.2;
-	double kd = -0.15;   /*derivitive should control and stop overshooting this can be done
-						  by having kd be negative or having a (P + I - D) for the output PS 
-						*/
+	double kd = -0.15;
+	/* derivitive should control and stop overshooting this can be done
+	   by having kd be negative or having a (P + I - D) for the output PS */
 	double P;
 	double I;
 	double D;
@@ -112,14 +109,11 @@ void driveTrain(int distance)
 	int errorTotal = 0;
 	int sign;
 
-	if (distance < 0){
+	if (distance < 0) {
 		sign = -1;
-		}
-	else{
-			sign = 1;
-		}
-
-	
+	} else {
+		sign = 1;
+	}
 
 	while (errorTerm > 1)
 	{
@@ -132,13 +126,12 @@ void driveTrain(int distance)
 			errorTotal = 50 / ki;
 		}
 
-
 		P = errorTerm * kp;
 		I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (((P + I + D) + 200)* sign);
+		int output = (((P + I + D) + 200) * sign);
 
-		printf("O=%D, P=%0.2f, D=%0.2f, Err=%d\n",output, P, D, errorTerm);
+		printf("O=%D, P=%0.2f, D=%0.2f, Err=%d\n", output, P, D, errorTerm);
 
 		driveL_train.move_voltage(output);
 		driveR_train.move_voltage(output);
@@ -157,16 +150,16 @@ void turn(int angle)
 {
 	driveL_train.set_reversed(false);
 	double CircleTicks = 1930;
-	int turnTicks = floor((CircleTicks/360) * angle);
+	int turnTicks = floor((CircleTicks / 360) * angle);
 
 	int startPos = getPos();
 	double kp = 9.0;
-	//double ki = 0.2;
+	// double ki = 0.2;
 	double kd = -0.05; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
 						*/
 	double P;
-	//double I;
+	// double I;
 	double D;
 	int lastError = 0;
 	int errorTerm;
@@ -184,10 +177,10 @@ void turn(int angle)
 		{
 			errorTotal = 50 / ki;
 		}
-		*/	
+		*/
 
 		P = errorTerm * kp;
-		//I = errorTotal * ki;
+		// I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
 		int output = (P + D) + 900;
 
@@ -210,24 +203,23 @@ void turn(int angle)
 	return;
 }
 
-
 void opcontrol()
 {
 
-	pros::ADIAnalogOut piston (1);//get port
+	pros::ADIAnalogOut piston(1); // get port
 	pros::Controller master(CONTROLLER_MASTER);
 	launchN.set_reversed(true);
 
 	bool intakeState = false;
-	bool extend = false;
+	bool extended = false;
 	int dead_Zone = 10;
 
-	while(true)
+	while (true)
 	{
-		
+
 		driveL_train.move(master.get_analog(ANALOG_LEFT_Y));
 		driveR_train.move(master.get_analog(ANALOG_RIGHT_Y));
-		
+
 		/*
 		ARCADE CONTROLL
 
@@ -238,21 +230,40 @@ void opcontrol()
 		driveL_train.move(left);
 		driveR_train.move(right);
 		*/
-	
-		if (master.get_digital_new_press(DIGITAL_L1))
-		{
-			if (extend == true)
-			{
+
+		if (master.get_digital_new_press(DIGITAL_L1)) {
+			/*
+			turn pneumatic on / off & keep track of state as PROS 
+			doesn't do this for us already.
+			
+			NOTE: the way that Vova wrote the code last year used the higher-level 
+			pros::c::adi_digital_write(port_name, port_state) function, which bypasses 
+			the object-oriented pros::ADIAnalogOut protocols. This same code would look like:
+			
+			```cpp
+			if (extended) {
+				pros::c::adi_digital_write(1, false);
+			    extended = false;
+			} else {
+			    pros::c::adi_digital_write(1, true);
+			   extended = true;
+			}
+			```
+			
+			not sure why the function protocol worked for us last year but try it out. 
+			(obviously the port number should be renamed as a variable or macro but that's 
+			for readability.) 
+			*/
+
+			if (extended) {
 				piston.set_value(false);
-				extend = false;
-			}
-			else
-			{
+				extended = false;
+			} else {
 				piston.set_value(true);
-				extend = true;
+				extended = true;
 			}
-		
-			printf("Digital_L1 Pnuematic, Extend=%d \n", extend);
+
+			printf("Digital_L1 Pnuematic, Extend=%d \n", extended);
 		}
 
 		if (master.get_digital_new_press(DIGITAL_R1))
@@ -263,8 +274,8 @@ void opcontrol()
 		}
 
 		if (master.get_digital_new_press(DIGITAL_Y))
-		{	
-			
+		{
+
 			if (intakeState == false)
 			{
 				intake.move_velocity(200);
@@ -275,7 +286,7 @@ void opcontrol()
 				intake.move_velocity(0);
 				intakeState = false;
 			}
-		
+
 			printf("Digital_Y intake intakeState=%d \n", intakeState);
 		}
 
