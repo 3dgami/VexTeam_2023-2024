@@ -2,13 +2,14 @@
 
 
 pros::Controller master{CONTROLLER_MASTER};	
-pros::Motor intake(14);
-pros::Motor launchN(12, true);	//update all motor ports
-pros::Motor launchP(13);
+pros::Motor intake1(1);
+pros::Motor intake2(10, true);
+pros::Motor launchN(14, true);	//update all motor ports
+pros::Motor launchP(15);
 pros::Motor right_front(11);
-pros::Motor left_front(1);
-pros::Motor left_back(10);
-pros::Motor right_back(20);
+pros::Motor left_front(20);
+pros::Motor left_back(19);
+pros::Motor right_back(12);
 pros::Motor_Group driveL_train({left_front, left_back});
 pros::Motor_Group driveR_train({right_front, right_back});
 
@@ -181,7 +182,25 @@ void disabled() {}
  * This task will exit when the robot is enabled and autonomous or opcontrol
  * starts.
  */
-void competition_initialize() {}
+void competition_initialize()
+{
+	/*auto ExpansionPort = 'A';
+	auto ExpansionIntakePort = 'B';
+	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
+	pros::c::adi_digital_write(ExpansionPort, LOW);
+	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
+	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+
+	pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
+	pros::delay(250);
+	launchN.move_relative(100*16, 100);// had times 3 // 100
+	launchP.move_relative(100*16, 100);
+	pros::delay(250);
+	pros::c::adi_digital_write(ExpansionIntakePort, LOW);*/
+	
+
+
+}
 
 /**
  * Runs the user autonomous code. This function will be started in its own task
@@ -194,7 +213,31 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+void autonomous() 
+{
+	auto ExpansionPort = 'A';
+	auto ExpansionIntakePort = 'B';
+	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
+	pros::c::adi_digital_write(ExpansionPort, LOW);
+	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
+	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+	/*
+	*/
+	/*driveTrain(-1450*4);
+	pros::delay(250);
+	turn(270);
+	pros::delay(250);
+	intake1.move_velocity(200);
+	intake2.move_velocity(200);
+	pros::delay(250);
+	driveTrain(500);
+	pros::delay(250);
+	driveTrain(-500);*/
+	pros::c::adi_digital_write(ExpansionPort, HIGH);
+	
+
+
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -213,7 +256,7 @@ void autonomous() {}
 void opcontrol()
 {
 	int turned = 0;
-	double multiply = 0.007 * turned;
+	double multiply = 0.0075 * turned;
 	auto ExpansionPort = 'A';
 	auto ExpansionIntakePort = 'B';
 	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
@@ -238,7 +281,7 @@ void opcontrol()
 		
 		/*ARCADE CONTROLL*/
 
-		int power = master.get_analog(ANALOG_RIGHT_X);
+		int power = -(master.get_analog(ANALOG_RIGHT_X));
 		int turn = master.get_analog(ANALOG_LEFT_Y);
 		int left = power - turn;
 		int right = power + turn;
@@ -274,22 +317,41 @@ void opcontrol()
 
 		}
 
-		if (master.get_digital_new_press(DIGITAL_Y))
+		if (master.get_digital_new_press(DIGITAL_A))
 		{	
-			
 			if (intakeState == false)
 			{
-				intake.move_velocity(200);
+				intake1.move_velocity(-200);
+				intake2.move_velocity(-200);
 				intakeState = true;
 			}
 			else
 			{
-				intake.move_velocity(0);
+				intake1.move_velocity(0);
+				intake2.move_velocity(0);
+				intakeState = false;
+			}
+		}
+
+		if (master.get_digital_new_press(DIGITAL_Y))
+		{	
+			if (intakeState == false)
+			{
+				intake1.move_velocity(200);
+				intake2.move_velocity(200);
+				intakeState = true;
+			}
+			else
+			{
+				intake1.move_velocity(0);
+				intake2.move_velocity(0);
 				intakeState = false;
 			}
 		
 			printf("Digital_Y intake intakeState=%d \n", intakeState);
 		}
+
+		
 
 		if (master.get_digital_new_press(DIGITAL_X))
 		{
@@ -297,6 +359,8 @@ void opcontrol()
 			if (extendIntake == true)
 			{
 				pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+				intake1.move_velocity(0);
+				intake2.move_velocity(0);
 				extendIntake = false;
 			}
 			else
@@ -309,7 +373,19 @@ void opcontrol()
 			printf("Digital_X \n");
 
 		}
+		if (master.get_digital_new_press(DIGITAL_RIGHT))
+		{
+			launchN.move_relative(500, 100);
+			launchP.move_relative(500, 100);
+		}
+
+		if (master.get_digital_new_press(DIGITAL_LEFT))
+		{
+			launchN.move_relative(100, 50);
+			launchP.move_relative(100, 50);
+		}
 
 		pros::delay(10);
+	
 	}
 }
