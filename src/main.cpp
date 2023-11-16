@@ -12,6 +12,8 @@ pros::Motor left_back(19);
 pros::Motor right_back(12);
 pros::Motor_Group driveL_train({left_front, left_back});
 pros::Motor_Group driveR_train({right_front, right_back});
+int rotationPort = 16;
+
 
 
 void driveU_train( int Rspeed, int Lspeed)
@@ -183,24 +185,7 @@ void disabled() {}
  * starts.
  */
 void competition_initialize()
-{
-	/*auto ExpansionPort = 'A';
-	auto ExpansionIntakePort = 'B';
-	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionPort, LOW);
-	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
-
-	pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
-	pros::delay(250);
-	launchN.move_relative(100*16, 100);// had times 3 // 100
-	launchP.move_relative(100*16, 100);
-	pros::delay(250);
-	pros::c::adi_digital_write(ExpansionIntakePort, LOW);*/
-	
-
-
-}
+{}
 
 /**
  * Runs the user autonomous code. This function will be started in its own task
@@ -223,18 +208,83 @@ void autonomous()
 	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
 	/*
 	*/
-	/*driveTrain(-1450*4);
+	pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
+	pros::delay(100);
+	driveTrain(-(1450));
 	pros::delay(250);
-	turn(270);
+	turn(45);
 	pros::delay(250);
+	//get alliance triball in goal
+
+	driveTrain(100);
+	pros::delay(100);
+	turn(90);
+	pros::delay(100);
+	driveTrain(-(1450*1.5));
+	pros::delay(100);
+	turn(-90);
+	pros::delay(100);
+	//move to center for first field triball
+
+	intake1.move_velocity(-200);
+	intake2.move_velocity(-200);
+	pros::delay(100);
+	driveTrain(-(1450));
+	//pros::delay(50);
+	intake1.move_velocity(0);
+	intake2.move_velocity(0);
+	pros::delay(250);
+	//collect first field triball into bot
+
+	turn(90);
+	pros::delay(100);
+	driveTrain(-(1450));
 	intake1.move_velocity(200);
 	intake2.move_velocity(200);
 	pros::delay(250);
-	driveTrain(500);
-	pros::delay(250);
-	driveTrain(-500);*/
+	intake1.move_velocity(0);
+	intake2.move_velocity(0);
+	//get first field triball into goal
+
+	turn(180);
+	pros::delay(100);
+	intake1.move_velocity(-200);
+	intake2.move_velocity(-200);
+	driveTrain(-(1450*1.75));
+	//pros::delay(50);
+	intake1.move_velocity(0);
+	intake2.move_velocity(0);
+	//turn around to and move to get second field triball into bot
+
+	pros::delay(100);
+	turn(180);
+	pros::delay(100);
+	driveTrain(-(1450*1.75));
+	intake1.move_velocity(200);
+	intake2.move_velocity(200);
+	pros::delay(100);
+	//move second field triball into goal
+
 	pros::c::adi_digital_write(ExpansionPort, HIGH);
-	
+	driveTrain(250);
+	turn(-20);
+	driveTrain(-(250));
+	driveTrain(250);
+	turn(40);
+	driveTrain(-(350));
+	driveTrain(400);
+	//extend wing and bump into goal two times at different angles to ensure triballs are in goal
+
+
+	//shut down all motors
+	intake1.move_velocity(0);
+	intake2.move_velocity(0);
+	driveR_train.move_voltage(0);
+	driveL_train.move_voltage(0);
+
+	pros::c::adi_digital_write(ExpansionPort, LOW);
+
+
 
 
 }
@@ -255,26 +305,33 @@ void autonomous()
 
 void opcontrol()
 {
-	int turned = 0;
-	double multiply = 0.0075 * turned;
 	auto ExpansionPort = 'A';
 	auto ExpansionIntakePort = 'B';
+
 	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
 	pros::c::adi_digital_write(ExpansionPort, LOW);
 	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
 	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
-	//pros::ADIAnalogOut piston (1);//get port
-	pros::Controller master(CONTROLLER_MASTER);
-	//launchN.set_reversed(true);
 
+	pros::Rotation rotation_sensor(rotationPort);
+
+	pros::Controller master(CONTROLLER_MASTER);
+
+	rotation_sensor.set_position(0);
 
 	bool intakeState = false;
 	bool extend = false;
 	bool extendIntake = false;
+
 	int dead_Zone = 10;
 
 	while(true)
 	{
+
+		rotation_sensor.get_angle();
+
+		/*TANK CONTROL*/
+
 		//driveR_train.set_reversed(true);
 		//driveL_train.move(master.get_analog(ANALOG_LEFT_Y));
 		//driveR_train.move(master.get_analog(ANALOG_RIGHT_Y));
@@ -283,8 +340,10 @@ void opcontrol()
 
 		int power = -(master.get_analog(ANALOG_RIGHT_X));
 		int turn = master.get_analog(ANALOG_LEFT_Y);
+
 		int left = power - turn;
 		int right = power + turn;
+
 		driveL_train.move(left);
 		driveR_train.move(right);
 		
@@ -306,46 +365,64 @@ void opcontrol()
 			printf("Digital_L1 Pnuematic, Extend=%d \n", extend);
 		}
 
-		if (master.get_digital_new_press(DIGITAL_R1))
-		{
+		if (master.get_digital_new_press(DIGITAL_R1) && extend == true)
+		{	
+			rotation_sensor.get_angle();
 
-			launchN.move_relative(1800 * (1 + multiply), 150);// had times 3 // 100
-			launchP.move_relative(1800 * (1 + multiply), 150);
-			turned += 1;
-			double multiply = 0.006 * turned;
-			printf("Digital_R1 launch, turned=%d, multiply=%f\n", turned, multiply);
+			launchN.move_relative(100, 100);
+			launchP.move_relative(100, 100);
+
+			while(rotation_sensor.get_angle() != 0)
+			{
+				launchN.move_velocity(100);
+				launchP.move_velocity(100);
+			}
+
+			printf("Digital_R1 launch");
 
 		}
 
-		if (master.get_digital_new_press(DIGITAL_A))
+		if (master.get_digital_new_press(DIGITAL_A) && extend == true)
 		{	
 			if (intakeState == false)
 			{
 				intake1.move_velocity(-200);
 				intake2.move_velocity(-200);
+
 				intakeState = true;
+
+				printf("intakeState = true");
 			}
 			else
 			{
 				intake1.move_velocity(0);
 				intake2.move_velocity(0);
+
 				intakeState = false;
+
+				printf("intakeState = false");
 			}
 		}
 
-		if (master.get_digital_new_press(DIGITAL_Y))
+		if (master.get_digital_new_press(DIGITAL_Y) && extend == true)
 		{	
 			if (intakeState == false)
 			{
 				intake1.move_velocity(200);
 				intake2.move_velocity(200);
+
 				intakeState = true;
+
+				printf("intakeState = true");
 			}
 			else
 			{
 				intake1.move_velocity(0);
 				intake2.move_velocity(0);
+
 				intakeState = false;
+
+				printf("intakeState = false");
 			}
 		
 			printf("Digital_Y intake intakeState=%d \n", intakeState);
@@ -359,8 +436,10 @@ void opcontrol()
 			if (extendIntake == true)
 			{
 				pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+
 				intake1.move_velocity(0);
 				intake2.move_velocity(0);
+
 				extendIntake = false;
 			}
 			else
@@ -370,16 +449,18 @@ void opcontrol()
 			}
 		
 			printf("Digital_X Pnuematic Intake, Extend=%d \n", extend);
-			printf("Digital_X \n");
 
 		}
-		if (master.get_digital_new_press(DIGITAL_RIGHT))
+		if (master.get_digital_new_press(DIGITAL_RIGHT) && extend == true)
 		{
-			launchN.move_relative(500, 100);
-			launchP.move_relative(500, 100);
+			while(rotation_sensor.get_angle() != 8000)
+			{
+				launchN.move_velocity(100);
+				launchP.move_velocity(100);
+			}
 		}
 
-		if (master.get_digital_new_press(DIGITAL_LEFT))
+		if (master.get_digital_new_press(DIGITAL_LEFT) && extend == true)
 		{
 			launchN.move_relative(100, 50);
 			launchP.move_relative(100, 50);
