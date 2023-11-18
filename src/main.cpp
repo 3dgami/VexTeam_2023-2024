@@ -8,20 +8,46 @@ pros::Motor launchN(14, true);	//update all motor ports
 pros::Motor launchP(15);
 pros::Motor right_front(11);
 pros::Motor left_front(20);
-pros::Motor left_back(19);
+pros::Motor left_back(19);//
 pros::Motor right_back(12);
 pros::Motor_Group driveL_train({left_front, left_back});
 pros::Motor_Group driveR_train({right_front, right_back});
 int rotationPort = 16;
+int maxAngle = -10;
+int minAngle = 1000000000;
+int ShootPos = 12400;
+int UpPos = 4702;
 
 
+void SetDriveRelative(int ticks, int Lspeed, int Rspeed)
+	{
 
-void driveU_train( int Rspeed, int Lspeed)
+		left_front.move_relative(-(ticks), Lspeed);
+		//left_middle.move_relative(ticks, Lspeed);
+		left_back.move_relative(-(ticks), Lspeed);
+
+		right_front.move_relative(ticks, Rspeed);
+		//right_middle.move_relative(ticks, Rspeed);
+		right_back.move_relative(ticks, Rspeed);
+	}
+
+void SetDrive(int Lspeed, int Rspeed)
+	{
+
+		left_front.move(-(Lspeed));
+		//left_middle.move(Lspeed);
+		left_back.move(-(Lspeed));
+		right_front.move(Rspeed);
+		//right_middle.move(Rspeed);
+		right_back.move(Rspeed);
+	}
+
+/*void driveU_train( int ticks)
 {
-	driveL_train.move(Lspeed);
-	driveR_train.move(Rspeed);
+	driveL_train.move_relative(-(ticks), 100);
+	driveR_train.move_relative(ticks, 100);
 
-}
+}*/
 
 double getLeftPos()
 {
@@ -40,6 +66,8 @@ double getPos()
 
 void driveTrain(int distance)
 {
+
+	driveL_train.set_reversed(true);
 	int startPos = getPos();
 	double kp = 15.0;
 	double ki = 0.2;
@@ -60,12 +88,14 @@ void driveTrain(int distance)
 	else{
 			sign = 1;
 		}
-
 	
+	errorTerm = distance + startPos - getPos();
 
-	while (errorTerm > 1)
+	while (errorTerm > 1 or errorTerm < -1)
 	{
-		errorTerm = abs((distance) + startPos) - getPos();
+		errorTerm = distance + startPos - getPos();
+
+		int Pos = getPos();
 
 		errorTotal = errorTotal + errorTerm;
 
@@ -76,11 +106,11 @@ void driveTrain(int distance)
 
 
 		P = errorTerm * kp;
-		I = errorTotal * ki;
+		//I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (((P + I + D) + 200)* sign);
+		int output = (((P + D) + (600*sign)));
 
-		printf("O=%D, P=%0.2f, D=%0.2f, Err=%d\n",output, P, D, errorTerm);
+		printf("O=%D, P=%0.2f, D=%0.2f, Position=%d, startPos=%d Err=%d\n",output, P, D, Pos, startPos, errorTerm);
 
 		driveL_train.move_voltage(output);
 		driveR_train.move_voltage(output);
@@ -98,8 +128,8 @@ void driveTrain(int distance)
 void turn(int angle)
 {
 	driveL_train.set_reversed(false);
-	double CircleTicks = 1930;
-	int turnTicks = floor((CircleTicks/360) * angle);
+	double CircleTicks = 2450;
+	int turnTicks = (CircleTicks/360) * angle;
 
 	int startPos = getPos();
 	double kp = 9.0;
@@ -118,7 +148,10 @@ void turn(int angle)
 	printf("start\n");
 	while (errorTerm > 0)
 	{
-		errorTerm = (turnTicks + startPos) - getPos();
+		errorTerm = (turnTicks + startPos) - floor(getPos());
+
+
+		int pos = getPos();
 
 		errorTotal = errorTotal + errorTerm;
 		/*
@@ -131,9 +164,10 @@ void turn(int angle)
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (P + D) + 900;
+		int output = (P + D) + 1100;
 
-		printf("step err=%d, P=%.02f, D=%.02f, O=%d\n, turn=%d", errorTerm, P, D, output, turnTicks);
+		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d\n, turn=%d", errorTerm, P, D, startPos, pos, output, turnTicks);
+
 
 		driveL_train.move_voltage(output);
 		driveR_train.move_voltage(output);
@@ -152,7 +186,25 @@ void turn(int angle)
 	return;
 }
 
+void Move(int ticks, int Lspeed, int Rspeed, int timeOut)
+	{
+		int counter = 0;
+		int startPos = getPos();
+
+		SetDriveRelative(ticks, Lspeed * 127 / 200, Rspeed * 127 / 200);
+
+		while (abs(getPos() - startPos) < abs(ticks) && counter <= timeOut)
+		{
+			pros::c::delay(10);
+			counter = counter + 10;
+		}
+
+		SetDrive(0, 0);
+		pros::c::delay(100);
+	}
+
 /**
+ *
  * A callback function for LLEMU's center button.
  *
  * When this callback is fired, it will toggle line 2 of the LCD text between
@@ -206,17 +258,19 @@ void autonomous()
 	pros::c::adi_digital_write(ExpansionPort, LOW);
 	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
 	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
-	/*
-	*/
-	pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
-	pros::delay(100);
-	driveTrain(-(1450));
-	pros::delay(250);
+	
+	//Move(-1000, 100, 100, 10000);
+	driveTrain(-500);
+	pros::delay(1000);
 	turn(45);
-	pros::delay(250);
+	pros::delay(1000);
+	//Move(-250, 100, 100, 10000);
+	//driveTrain(-500);
+	pros::delay(1000);
+
 	//get alliance triball in goal
 
-	driveTrain(100);
+	/*driveTrain(100);
 	pros::delay(100);
 	turn(90);
 	pros::delay(100);
@@ -275,15 +329,14 @@ void autonomous()
 	driveTrain(400);
 	//extend wing and bump into goal two times at different angles to ensure triballs are in goal
 
-
+	*/
 	//shut down all motors
-	intake1.move_velocity(0);
-	intake2.move_velocity(0);
+	//intake1.move_velocity(0);
+	//intake2.move_velocity(0);
 	driveR_train.move_voltage(0);
 	driveL_train.move_voltage(0);
 
-	pros::c::adi_digital_write(ExpansionPort, LOW);
-
+	//pros::c::adi_digital_write(ExpansionPort, LOW);
 
 
 
@@ -317,18 +370,37 @@ void opcontrol()
 
 	pros::Controller master(CONTROLLER_MASTER);
 
-	rotation_sensor.set_position(0);
+	//rotation_sensor.set_position(0);
 
 	bool intakeState = false;
-	bool extend = false;
+	bool extend = true;//change to false
 	bool extendIntake = false;
 
 	int dead_Zone = 10;
+	int count = 0;
+
+	pros::delay(500);
+	//driveTrain(1500);
+	turn(90);
+	pros::delay(500);
 
 	while(true)
 	{
 
 		rotation_sensor.get_angle();
+		int angle = rotation_sensor.get_angle();
+		if(angle > maxAngle)
+		{
+			maxAngle = angle;		
+		}
+
+		if (angle < minAngle)
+		{
+			minAngle = angle;
+		}
+
+		printf("MaxAngle=%d; MinAngle=%d; currentAngle=%d \r\n", maxAngle, minAngle, angle);
+		
 
 		/*TANK CONTROL*/
 
@@ -367,22 +439,34 @@ void opcontrol()
 
 		if (master.get_digital_new_press(DIGITAL_R1) && extend == true)
 		{	
-			rotation_sensor.get_angle();
 
-			launchN.move_relative(100, 100);
-			launchP.move_relative(100, 100);
+			launchN.move_relative(200, 100);
+			launchP.move_relative(200, 100);
+			//angle = rotation_sensor.get_angle();
+			pros::delay(500);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
+			angle = rotation_sensor.get_angle();
 
-			while(rotation_sensor.get_angle() != 0)
+			while(angle < (ShootPos))
 			{
 				launchN.move_velocity(100);
 				launchP.move_velocity(100);
-			}
+				angle = rotation_sensor.get_angle();
+				printf("angle=%d \n", angle);
+				if(angle >= (ShootPos))
+				{
+					break;
+				}
+				pros::delay(10);
 
-			printf("Digital_R1 launch");
+			}
+			launchN.move_velocity(0);
+			launchP.move_velocity(0);
+
+			printf("Digital_R1 launch \n");
 
 		}
 
-		if (master.get_digital_new_press(DIGITAL_A) && extend == true)
+		if (master.get_digital_new_press(DIGITAL_A))
 		{	
 			if (intakeState == false)
 			{
@@ -404,7 +488,7 @@ void opcontrol()
 			}
 		}
 
-		if (master.get_digital_new_press(DIGITAL_Y) && extend == true)
+		if (master.get_digital_new_press(DIGITAL_Y))
 		{	
 			if (intakeState == false)
 			{
@@ -453,11 +537,7 @@ void opcontrol()
 		}
 		if (master.get_digital_new_press(DIGITAL_RIGHT) && extend == true)
 		{
-			while(rotation_sensor.get_angle() != 8000)
-			{
-				launchN.move_velocity(100);
-				launchP.move_velocity(100);
-			}
+			
 		}
 
 		if (master.get_digital_new_press(DIGITAL_LEFT) && extend == true)
@@ -466,7 +546,24 @@ void opcontrol()
 			launchP.move_relative(100, 50);
 		}
 
+		while (master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
+		{
+			if (!(count % 500)) {
+      		
+      		//master.print(0, 0, "Counter: %d", count);
+    		}
+    		count++;
+    		pros::delay(2);
+		}
+		
+		count = 0;
 		pros::delay(10);
+		
 	
 	}
 }
+//11460
+//3884 = all the way up
+//13034 = down 
+//47.02 deg
+//135.61
