@@ -1,6 +1,5 @@
 #include "main.h"
 
-
 pros::Controller master{CONTROLLER_MASTER};	
 pros::Motor intake1(1);
 pros::Motor intake2(10, true);
@@ -18,7 +17,6 @@ int minAngle = 1000000000;
 int ShootPos = 12400;
 int UpPos = 4702;
 
-
 void SetDriveRelative(int ticks, int Lspeed, int Rspeed)
 	{
 
@@ -30,6 +28,23 @@ void SetDriveRelative(int ticks, int Lspeed, int Rspeed)
 		//right_middle.move_relative(ticks, Rspeed);
 		right_back.move_relative(ticks, Rspeed);
 	}
+
+pros::Controller master{CONTROLLER_MASTER};
+pros::Motor intake(14);
+pros::Motor launchN(12); // update all motor ports
+pros::Motor launchP(13);
+pros::Motor right_front(11);
+pros::Motor left_front(1);
+pros::Motor left_back(10);
+pros::Motor right_back(20);
+pros::Motor_Group driveL_train({left_front, left_back});
+pros::Motor_Group driveR_train({right_front, right_back});
+
+void driveU_train(int Rspeed, int Lspeed)
+{
+	driveL_train.move(Lspeed);
+	driveR_train.move(Rspeed);
+}
 
 void SetDrive(int Lspeed, int Rspeed)
 	{
@@ -71,9 +86,9 @@ void driveTrain(int distance)
 	int startPos = getPos();
 	double kp = 15.0;
 	double ki = 0.2;
-	double kd = -0.15;   /*derivitive should control and stop overshooting this can be done
-						  by having kd be negative or having a (P + I - D) for the output PS 
-						*/
+	double kd = -0.15;
+	/* derivitive should control and stop overshooting this can be done
+	   by having kd be negative or having a (P + I - D) for the output PS */
 	double P;
 	double I;
 	double D;
@@ -82,13 +97,12 @@ void driveTrain(int distance)
 	int errorTotal = 0;
 	int sign;
 
-	if (distance < 0){
+	if (distance < 0) {
 		sign = -1;
-		}
-	else{
-			sign = 1;
-		}
-	
+	} else {
+		sign = 1;
+	}
+
 	errorTerm = distance + startPos - getPos();
 
 	while (errorTerm > 1 or errorTerm < -1)
@@ -104,10 +118,10 @@ void driveTrain(int distance)
 			errorTotal = 50 / ki;
 		}
 
-
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
+    
 		int output = (((P + D) + (600*sign)));
 
 		printf("O=%D, P=%0.2f, D=%0.2f, Position=%d, startPos=%d Err=%d\n",output, P, D, Pos, startPos, errorTerm);
@@ -133,12 +147,12 @@ void turn(int angle)
 
 	int startPos = getPos();
 	double kp = 9.0;
-	//double ki = 0.2;
+	// double ki = 0.2;
 	double kd = -0.05; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
 						*/
 	double P;
-	//double I;
+	// double I;
 	double D;
 	int lastError = 0;
 	int errorTerm;
@@ -159,10 +173,10 @@ void turn(int angle)
 		{
 			errorTotal = 50 / ki;
 		}
-		*/	
+		*/
 
 		P = errorTerm * kp;
-		//I = errorTotal * ki;
+		// I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
 		int output = (P + D) + 1100;
 
@@ -368,13 +382,13 @@ void opcontrol()
 
 	pros::Rotation rotation_sensor(rotationPort);
 
+	pros::ADIAnalogOut piston(1); // get port
 	pros::Controller master(CONTROLLER_MASTER);
 
 	//rotation_sensor.set_position(0);
 
 	bool intakeState = false;
-	bool extend = true;//change to false
-	bool extendIntake = false;
+	bool extended = false;
 
 	int dead_Zone = 10;
 	int count = 0;
@@ -384,9 +398,14 @@ void opcontrol()
 	turn(90);
 	pros::delay(500);
 
-	while(true)
+	while (true)
 	{
+		driveL_train.move(master.get_analog(ANALOG_LEFT_Y));
+		driveR_train.move(master.get_analog(ANALOG_RIGHT_Y));
 
+		/*
+		ARCADE CONTROLL
+=======
 		rotation_sensor.get_angle();
 		int angle = rotation_sensor.get_angle();
 		if(angle > maxAngle)
@@ -418,23 +437,42 @@ void opcontrol()
 
 		driveL_train.move(left);
 		driveR_train.move(right);
-		
-		
-	
-		if (master.get_digital_new_press(DIGITAL_L1))
-		{
-			if (extend == true)
-			{
-				pros::c::adi_digital_write(ExpansionPort, LOW);
-				extend = false;
+    
+		*/
+
+		if (master.get_digital_new_press(DIGITAL_L1)) {
+			/*
+			turn pneumatic on / off & keep track of state as PROS 
+			doesn't do this for us already.
+			
+			NOTE: the way that Vova wrote the code last year used the higher-level 
+			pros::c::adi_digital_write(port_name, port_state) function, which bypasses 
+			the object-oriented pros::ADIAnalogOut protocols. This same code would look like:
+			
+			```cpp
+			if (extended) {
+				pros::c::adi_digital_write(1, false);
+			    extended = false;
+			} else {
+			    pros::c::adi_digital_write(1, true);
+			   extended = true;
 			}
-			else
-			{
-				pros::c::adi_digital_write(ExpansionPort, HIGH);
-				extend = true;
+			```
+			
+			not sure why the function protocol worked for us last year but try it out. 
+			(obviously the port number should be renamed as a variable or macro but that's 
+			for readability.) 
+			*/
+
+			if (extended) {
+				piston.set_value(false);
+				extended = false;
+			} else {
+				piston.set_value(true);
+				extended = true;
 			}
-		
-			printf("Digital_L1 Pnuematic, Extend=%d \n", extend);
+
+			printf("Digital_L1 Pnuematic, Extend=%d \n", extended);
 		}
 
 		if (master.get_digital_new_press(DIGITAL_R1) && extend == true)
@@ -488,8 +526,7 @@ void opcontrol()
 			}
 		}
 
-		if (master.get_digital_new_press(DIGITAL_Y))
-		{	
+		if (master.get_digital_new_press(DIGITAL_Y)) {
 			if (intakeState == false)
 			{
 				intake1.move_velocity(200);
@@ -500,7 +537,7 @@ void opcontrol()
 				printf("intakeState = true");
 			}
 			else
-			{
+			\
 				intake1.move_velocity(0);
 				intake2.move_velocity(0);
 
@@ -508,7 +545,7 @@ void opcontrol()
 
 				printf("intakeState = false");
 			}
-		
+
 			printf("Digital_Y intake intakeState=%d \n", intakeState);
 		}
 
