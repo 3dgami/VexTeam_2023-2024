@@ -64,7 +64,7 @@ double getPos()
 	return (getLeftPos() + getRightPos()) / 2;
 }
 
-void driveTrain(int distance)
+void driveTrain(int distance, int RP, int LP)
 {
 
 	driveL_train.set_reversed(true);
@@ -112,8 +112,8 @@ void driveTrain(int distance)
 
 		printf("O=%D, P=%0.2f, D=%0.2f, Position=%d, startPos=%d Err=%d\n",output, P, D, Pos, startPos, errorTerm);
 
-		driveL_train.move_voltage(output);
-		driveR_train.move_voltage(output);
+		driveL_train.move_voltage(output + LP);
+		driveR_train.move_voltage(output + RP);
 
 		lastError = errorTerm;
 		pros::delay(20);
@@ -273,26 +273,26 @@ void autonomous()
 	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
 	
 	//driveTrain(-1250);//one block
-	driveTrain(1000);
+	driveTrain(1000, 0, 0);
 	pros::delay(500);
-	turn(-45);
-	pros::delay(500);
-	driveTrain(1000);
+	//turn(-45);
+	//pros::delay(500);
+	driveTrain(1000, 0, 800);
 	pros::delay(500);
 	//driveTrain(-200);
 	//pros::delay(500);
 	//driveTrain(250);
 	//pros::delay(500);
-	driveTrain(-400);
+	driveTrain(-400, 0, 0);
 
 	pros::delay(500);
 	turn(-90);
 	pros::delay(500);
-	driveTrain(1250);
+	driveTrain(1250, 0, 0);
 	pros::delay(500);
 	turn(90);
 	pros::delay(500);
-	driveTrain(1250);
+	driveTrain(1250, 0, 0);
 
 
 	//shut down all motors
