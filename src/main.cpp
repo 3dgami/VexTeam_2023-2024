@@ -273,26 +273,26 @@ void autonomous()
 	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
 	
 	//driveTrain(-1250);//one block
-	driveTrain(1000, 0, 0);
-	pros::delay(500);
+	//driveTrain(1000, 0, 0);
+	//pros::delay(500);
 	//turn(-45);
 	//pros::delay(500);
-	driveTrain(1000, 0, 800);
+	driveTrain(500, 0, 2000);
 	pros::delay(500);
 	//driveTrain(-200);
 	//pros::delay(500);
 	//driveTrain(250);
 	//pros::delay(500);
-	driveTrain(-400, 0, 0);
+	//driveTrain(-400, 0, 0);
 
-	pros::delay(500);
+	/*pros::delay(500);
 	turn(-90);
 	pros::delay(500);
 	driveTrain(1250, 0, 0);
 	pros::delay(500);
 	turn(90);
 	pros::delay(500);
-	driveTrain(1250, 0, 0);
+	driveTrain(1250, 0, 0);*/
 
 
 	//shut down all motors
