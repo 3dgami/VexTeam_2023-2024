@@ -12,11 +12,11 @@ pros::Motor left_back(1);//
 pros::Motor right_back(11);
 pros::Motor_Group driveL_train({left_front, left_back});
 pros::Motor_Group driveR_train({right_front, right_back});
-int rotationPort = 11;
+int rotationPort = 12;
 int maxAngle = -10;
 int minAngle = 1000000000;
-int ShootPos = 11800;
-int UpPos = 4702;
+int ShootPos = 9100;
+int UpPos = 3500;
 
 
 void SetDriveRelative(int ticks, int Lspeed, int Rspeed)
@@ -277,7 +277,7 @@ void autonomous()
 	//pros::delay(500);
 	//turn(-45);
 	//pros::delay(500);
-	driveTrain(500, 0, 2000);
+	driveTrain(1000, 0, 4000);
 	pros::delay(500);
 	//driveTrain(-200);
 	//pros::delay(500);
@@ -402,7 +402,7 @@ void opcontrol()
 			printf("Digital_L1 Pnuematic, Extend=%d \n", extend);
 		}
 
-		if (master.get_digital_new_press(DIGITAL_R1) && extend == true)
+		if (master.get_digital_new_press(DIGITAL_R1))
 		{	
 
 			launchN.move_relative(150, 100);
@@ -506,7 +506,7 @@ void opcontrol()
 			
 		}
 
-		if (master.get_digital_new_press(DIGITAL_LEFT) && extend)
+		if (master.get_digital_new_press(DIGITAL_LEFT))
 		{
 			launchN.move_relative(100, 50);
 			launchP.move_relative(100, 50);
