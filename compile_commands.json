@@ -5,15 +5,12 @@
             "-c",
             "-target",
             "armv7ar-none-none-eabi",
-            "-fno-ms-extensions",
-            "-fno-ms-compatibility",
-            "-fno-delayed-template-parsing",
-            "-isystemc:\\users\\sasha\\appdata\\roaming\\code\\user\\globalstorage\\sigbots.pros\\install\\pros-toolchain-windows\\usr\\bin\\../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include/c++/10.3.1",
-            "-isystemc:\\users\\sasha\\appdata\\roaming\\code\\user\\globalstorage\\sigbots.pros\\install\\pros-toolchain-windows\\usr\\bin\\../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include/c++/10.3.1/arm-none-eabi/thumb/v7-a+simd/softfp",
-            "-isystemc:\\users\\sasha\\appdata\\roaming\\code\\user\\globalstorage\\sigbots.pros\\install\\pros-toolchain-windows\\usr\\bin\\../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include/c++/10.3.1/backward",
-            "-isystemc:\\users\\sasha\\appdata\\roaming\\code\\user\\globalstorage\\sigbots.pros\\install\\pros-toolchain-windows\\usr\\bin\\../lib/gcc/arm-none-eabi/10.3.1/include",
-            "-isystemc:\\users\\sasha\\appdata\\roaming\\code\\user\\globalstorage\\sigbots.pros\\install\\pros-toolchain-windows\\usr\\bin\\../lib/gcc/arm-none-eabi/10.3.1/include-fixed",
-            "-isystemc:\\users\\sasha\\appdata\\roaming\\code\\user\\globalstorage\\sigbots.pros\\install\\pros-toolchain-windows\\usr\\bin\\../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include/c++/10.3.1",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include/c++/10.3.1/arm-none-eabi/thumb/v7-a+simd/softfp",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include/c++/10.3.1/backward",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/include",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/include-fixed",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include",
             "-iquote./include",
             "-iquote./include/okapi/squiggles",
             "-iquote./include/./",
@@ -34,9 +31,9 @@
             "--std=gnu++17",
             "-o",
             "bin/main.cpp.o",
-            "src\\main.cpp"
+            "src/main.cpp"
         ],
-        "directory": "C:\\Users\\sasha\\OneDrive\\Attachments\\Desktop\\VexOwnCode\\VexDrive\\VexPid2\\VexTeam_2023-2024",
-        "file": "src\\main.cpp"
+        "directory": "/home/sasha/VexTeam_2023-2024",
+        "file": "src/main.cpp"
     }
 ]

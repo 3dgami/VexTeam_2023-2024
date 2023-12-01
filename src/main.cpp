@@ -15,7 +15,7 @@ pros::Motor_Group driveR_train({right_front, right_back});
 int rotationPort = 12;
 int maxAngle = -10;
 int minAngle = 1000000000;
-int ShootPos = 9100;
+int ShootPos = 9000;
 int UpPos = 3500;
 
 
@@ -335,19 +335,14 @@ void opcontrol()
 
 	pros::Controller master(CONTROLLER_MASTER);
 
-	//rotation_sensor.set_position(0);
 
 	bool intakeState = false;
-	bool extend = true;//change to false
+	bool extend = false;//change to false
 	bool extendIntake = false;
 
 	int dead_Zone = 10;
 	int count = 0;
 
-	//pros::delay(500);
-	//driveTrain(1500);
-	//turn(90);
-	//pros::delay(500);
 
 	while(true)
 	{
@@ -407,7 +402,6 @@ void opcontrol()
 
 			launchN.move_relative(150, 100);
 			launchP.move_relative(150, 100);
-			//angle = rotation_sensor.get_angle();
 			pros::delay(250);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
 			angle = rotation_sensor.get_angle();
 
@@ -437,7 +431,6 @@ void opcontrol()
 			if (intakeState == false)
 			{
 				intake1.move_velocity(-200);
-				//intake2.move_velocity(-200);
 
 				intakeState = true;
 
@@ -446,7 +439,6 @@ void opcontrol()
 			else
 			{
 				intake1.move_velocity(0);
-				//intake2.move_velocity(0);
 
 				intakeState = false;
 
@@ -459,7 +451,6 @@ void opcontrol()
 			if (intakeState == false)
 			{
 				intake1.move_velocity(200);
-				//intake2.move_velocity(200);
 
 				intakeState = true;
 
@@ -468,7 +459,6 @@ void opcontrol()
 			else
 			{
 				intake1.move_velocity(0);
-				//intake2.move_velocity(0);
 
 				intakeState = false;
 
@@ -488,28 +478,29 @@ void opcontrol()
 				pros::c::adi_digital_write(ExpansionIntakePort, LOW);
 
 				intake1.move_velocity(0);
-				//intake2.move_velocity(0);
 
 				extendIntake = false;
 			}
 			else
 			{
 				pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
+
 				extendIntake = true;
 			}
 		
 			printf("Digital_X Pnuematic Intake, Extend=%d \n", extend);
 
 		}
-		if (master.get_digital_new_press(DIGITAL_RIGHT) && extend)
+		if (master.get_digital_new_press(DIGITAL_RIGHT))
 		{
-			
+			launchN.move_relative(100, 50);
+			launchP.move_relative(100, 50);
 		}
 
 		if (master.get_digital_new_press(DIGITAL_LEFT))
 		{
-			launchN.move_relative(100, 50);
-			launchP.move_relative(100, 50);
+			launchN.move_relative(500, 100);
+			launchP.move_relative(500, 100);
 		}
 
 		while (master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
@@ -528,8 +519,4 @@ void opcontrol()
 	
 	}
 }
-//11460
-//3884 = all the way up
-//13034 = down 
-//47.02 deg
-//135.61
+
