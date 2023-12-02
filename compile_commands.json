@@ -1,6 +1,43 @@
 [
     {
         "arguments": [
+            "src/main.cpp",
+            "bin/main.cpp.o",
+            "-o",
+            "--std=gnu++17",
+            "-funwind-tables",
+            "-fdiagnostics-color",
+            "-fdata-sections",
+            "-ffunction-sections",
+            "-Wno-psabi",
+            "-D_POSIX_MONOTONIC_CLOCK",
+            "-D_POSIX_TIMERS",
+            "-D_UNIX98_THREAD_MUTEX_ATTRIBUTES",
+            "-D_POSIX_THREADS",
+            "-g",
+            "-Os",
+            "-mfloat-abi=softfp",
+            "-mfpu=neon-fp16",
+            "-mcpu=cortex-a9",
+            "-iquote./include/./",
+            "-iquote./include/okapi/squiggles",
+            "-iquote./include",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/include-fixed",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/include",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include/c++/10.3.1/backward",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include/c++/10.3.1/arm-none-eabi/thumb/v7-a+simd/softfp",
+            "-isystem/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/include/c++/10.3.1",
+            "armv7ar-none-none-eabi",
+            "-target",
+            "-c",
+            "clang++"
+        ],
+        "directory": "/home/sasha/VexTeam_2023-2024",
+        "file": "src/main.cpp"
+    },
+    {
+        "arguments": [
             "clang++",
             "-c",
             "-target",
@@ -30,10 +67,10 @@
             "-funwind-tables",
             "--std=gnu++17",
             "-o",
-            "bin/main.cpp.o",
-            "src/main.cpp"
+            "bin/selection.cpp.o",
+            "src/selection.cpp"
         ],
         "directory": "/home/sasha/VexTeam_2023-2024",
-        "file": "src/main.cpp"
+        "file": "src/selection.cpp"
     }
 ]

@@ -24,7 +24,6 @@ void SetDriveRelative(int ticks, int Lspeed, int Rspeed)
 
 		left_front.move_relative(-(ticks), Lspeed);
 		left_back.move_relative(-(ticks), Lspeed);
-
 		right_front.move_relative(ticks, Rspeed);
 		right_back.move_relative(ticks, Rspeed);
 	}
