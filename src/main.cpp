@@ -15,7 +15,7 @@ pros::Motor_Group driveR_train({right_front, right_back});
 int rotationPort = 12;
 int maxAngle = -10;
 int minAngle = 1000000000;
-int ShootPos = 9000;
+int ShootPos = 8800;
 int UpPos = 3500;
 
 
@@ -23,11 +23,9 @@ void SetDriveRelative(int ticks, int Lspeed, int Rspeed)
 	{
 
 		left_front.move_relative(-(ticks), Lspeed);
-		//left_middle.move_relative(ticks, Lspeed);
 		left_back.move_relative(-(ticks), Lspeed);
 
 		right_front.move_relative(ticks, Rspeed);
-		//right_middle.move_relative(ticks, Rspeed);
 		right_back.move_relative(ticks, Rspeed);
 	}
 
@@ -35,19 +33,10 @@ void SetDrive(int Lspeed, int Rspeed)
 	{
 
 		left_front.move(-(Lspeed));
-		//left_middle.move(Lspeed);
 		left_back.move(-(Lspeed));
 		right_front.move(Rspeed);
-		//right_middle.move(Rspeed);
 		right_back.move(Rspeed);
 	}
-
-/*void driveU_train( int ticks)
-{
-	driveL_train.move_relative(-(ticks), 100);
-	driveR_train.move_relative(ticks, 100);
-
-}*/
 
 double getLeftPos()
 {
@@ -64,12 +53,12 @@ double getPos()
 	return (getLeftPos() + getRightPos()) / 2;
 }
 
-void driveTrain(int distance, int RP, int LP)
+void driveTrain(int distance)
 {
 
 	driveL_train.set_reversed(true);
 	int startPos = getPos();
-	double kp = 12.0;
+	double kp = 10.0;
 	double ki = 0.2;
 	double kd = -0.15;   /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output PS 
@@ -112,8 +101,8 @@ void driveTrain(int distance, int RP, int LP)
 
 		printf("O=%D, P=%0.2f, D=%0.2f, Position=%d, startPos=%d Err=%d\n",output, P, D, Pos, startPos, errorTerm);
 
-		driveL_train.move_voltage(output + LP);
-		driveR_train.move_voltage(output + RP);
+		driveL_train.move_voltage(output);
+		driveR_train.move_voltage(output);
 
 		lastError = errorTerm;
 		pros::delay(20);
@@ -134,7 +123,7 @@ void turn(int angle)
 
 
 	int startPos = getPos();
-	double kp = 9.0;
+	double kp = 7.0;
 	//double ki = 0.2;
 	double kd = -0.05; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
@@ -273,35 +262,30 @@ void autonomous()
 	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
 	
 	//driveTrain(-1250);//one block
-	//driveTrain(1000, 0, 0);
-	//pros::delay(500);
-	//turn(-45);
-	//pros::delay(500);
-	driveTrain(1000, 0, 4000);
-	pros::delay(500);
-	//driveTrain(-200);
-	//pros::delay(500);
-	//driveTrain(250);
+	driveTrain(1500);
+	pros::delay(100);
+	turn(-45);
+	pros::delay(100);
+	driveTrain(750);
+	pros::delay(100);
+	driveTrain(-800);
 	//pros::delay(500);
 	//driveTrain(-400, 0, 0);
 
-	/*pros::delay(500);
+	pros::delay(100);
 	turn(-90);
-	pros::delay(500);
-	driveTrain(1250, 0, 0);
-	pros::delay(500);
+	pros::delay(100);
+	driveTrain(1100);
+	pros::delay(100);
 	turn(90);
-	pros::delay(500);
-	driveTrain(1250, 0, 0);*/
+	pros::delay(100);
+	driveTrain(1250*1.5);
 
 
 	//shut down all motors
-	//intake1.move_velocity(0);
-	//intake2.move_velocity(0);
-	//driveR_train.move_voltage(0);
-	//driveL_train.move_voltage(0);
-
-	//pros::c::adi_digital_write(ExpansionPort, LOW);
+	driveR_train.move_voltage(0);
+	driveL_train.move_voltage(0);
+	pros::c::adi_digital_write(ExpansionPort, LOW);
 
 
 
@@ -323,7 +307,7 @@ void autonomous()
 
 void opcontrol()
 {
-	auto ExpansionPort = 'A';
+	auto ExpansionPort = 'H';
 	auto ExpansionIntakePort = 'B';
 
 	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
@@ -400,9 +384,9 @@ void opcontrol()
 		if (master.get_digital_new_press(DIGITAL_R1))
 		{	
 
-			launchN.move_relative(150, 100);
-			launchP.move_relative(150, 100);
-			pros::delay(250);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
+			launchN.move_relative(150, 300);
+			launchP.move_relative(150, 300);
+			pros::delay(200);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
 			angle = rotation_sensor.get_angle();
 
 			while(angle < (ShootPos))
@@ -412,8 +396,8 @@ void opcontrol()
 					break;
 				}
 				angle = rotation_sensor.get_angle();
-				launchN.move_velocity(150);
-				launchP.move_velocity(150);
+				launchN.move_velocity(300);
+				launchP.move_velocity(300);
 				
 				printf("angle=%d \n", angle);
 				pros::delay(5);
