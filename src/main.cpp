@@ -1,4 +1,6 @@
 #include "main.h"
+#include "selection.h"
+//#include "selection.ccp"
 
 //update all motor ports if needed
 pros::Controller master{CONTROLLER_MASTER};	
@@ -195,7 +197,10 @@ void on_center_button() {}
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
-void initialize() {}
+void initialize()
+{
+	selector::init();
+}
 
 /**
  * Runs while the robot is in the disabled state of Field Management System or
@@ -238,30 +243,45 @@ void autonomous()
 	
 	//1250 ticks = one block
 
-	//score alliance ball
-	driveTrain(1500);
-	pros::delay(100);
-	turn(-45);
-	pros::delay(100);
-	driveTrain(750);
-	pros::delay(100);
-	driveTrain(-800);
+	if(selector::auton == 1, -1)
+	{
+		//score alliance ball
+		driveTrain(1500);
+		pros::delay(100);
+		turn(-45);
+		pros::delay(100);
+		driveTrain(750);
+		pros::delay(100);
+		driveTrain(-800);
 
-	//move to center to block opponent
-	pros::delay(100);
-	turn(-90);
-	pros::delay(100);
-	driveTrain(1100);
-	pros::delay(100);
-	turn(90);
-	pros::delay(100);
-	driveTrain(1250*1.5);
+		//move to center to block opponent
+		pros::delay(100);
+		turn(-90);
+		pros::delay(100);
+		driveTrain(1100);
+		pros::delay(100);
+		turn(90);
+		pros::delay(100);
+		driveTrain(1250*1.5);
 
 
-	//shut down all motors
-	driveR_train.move_voltage(0);
-	driveL_train.move_voltage(0);
-	pros::c::adi_digital_write(ExpansionPort, LOW);
+		//shut down all motors
+		driveR_train.move_voltage(0);
+		driveL_train.move_voltage(0);
+		pros::c::adi_digital_write(ExpansionPort, LOW);
+	}
+
+	if(selector::auton == -3,3)
+	{
+		driveR_train.move_voltage(0);
+		driveL_train.move_voltage(0);
+		pros::c::adi_digital_write(ExpansionPort, LOW);
+	}
+
+	if(selector::auton == 0)
+	{
+		//will put skills in here
+	}
 
 
 
