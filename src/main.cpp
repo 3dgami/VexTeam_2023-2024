@@ -5,7 +5,7 @@
 //update all motor ports if needed
 pros::Controller master{CONTROLLER_MASTER};	
 pros::Motor climb(13); 
-pros::Motor intake(19);
+pros::Motor intake(6);
 pros::Motor launchN(14, true);
 pros::Motor launchP(15);
 pros::Motor right_front(20);
