@@ -1,10 +1,10 @@
 #include "main.h"
 
-
+//update all motor ports if needed
 pros::Controller master{CONTROLLER_MASTER};	
-pros::Motor intake1(19);
-//pros::Motor intake2(10, true);
-pros::Motor launchN(14, true);	//update all motor ports
+pros::Motor climb(13); 
+pros::Motor intake(19);
+pros::Motor launchN(14, true);
 pros::Motor launchP(15);
 pros::Motor right_front(20);
 pros::Motor left_front(10);
@@ -187,30 +187,6 @@ void turn(int angle)
 	return;
 }
 
-void Move(int ticks, int Lspeed, int Rspeed, int timeOut)
-	{
-		int counter = 0;
-		int startPos = getPos();
-
-		SetDriveRelative(ticks, Lspeed * 127 / 200, Rspeed * 127 / 200);
-
-		while (abs(getPos() - startPos) < abs(ticks) && counter <= timeOut)
-		{
-			pros::c::delay(10);
-			counter = counter + 10;
-		}
-
-		SetDrive(0, 0);
-		pros::c::delay(100);
-	}
-
-/**
- *
- * A callback function for LLEMU's center button.
- *
- * When this callback is fired, it will toggle line 2 of the LCD text between
- * "I was pressed!" and nothing.
- */
 void on_center_button() {}
 
 /**
@@ -253,14 +229,16 @@ void competition_initialize()
  */
 void autonomous() 
 {
-	auto ExpansionPort = 'A';
-	auto ExpansionIntakePort = 'B';
+	auto ExpansionPort = 'H';
+	auto ExpansionIntakePort = 'G';
 	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionPort, LOW);
+	pros::c::adi_digital_write(ExpansionPort, HIGH);
 	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+	pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
 	
-	//driveTrain(-1250);//one block
+	//1250 ticks = one block
+
+	//score alliance ball
 	driveTrain(1500);
 	pros::delay(100);
 	turn(-45);
@@ -268,9 +246,8 @@ void autonomous()
 	driveTrain(750);
 	pros::delay(100);
 	driveTrain(-800);
-	//pros::delay(500);
-	//driveTrain(-400, 0, 0);
 
+	//move to center to block opponent
 	pros::delay(100);
 	turn(-90);
 	pros::delay(100);
@@ -307,12 +284,15 @@ void autonomous()
 void opcontrol()
 {
 	auto ExpansionPort = 'H';
-	auto ExpansionIntakePort = 'B';
+	auto ExpansionIntakePort = 'G';
+	auto ExpansionClimbPort = 'F';
 
 	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionPort, LOW);
+	pros::c::adi_digital_write(ExpansionPort, HIGH);
 	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+	pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
+	pros::c::adi_pin_mode(ExpansionClimbPort, OUTPUT);
+	pros::c::adi_digital_write(ExpansionClimbPort, LOW);
 
 	pros::Rotation rotation_sensor(rotationPort);
 
@@ -320,16 +300,24 @@ void opcontrol()
 
 
 	bool intakeState = false;
-	bool extend = false;//change to false
+	bool extend = false;
 	bool extendIntake = false;
+	bool extendClimb = false;
+
+	bool climbPos = false;
 
 	int dead_Zone = 10;
 	int count = 0;
+
+	int angle = rotation_sensor.get_angle();
 
 
 	while(true)
 	{
 
+
+		/*USE TO CALIBRATE TURN SENSOR FOR LAUNCHER*/
+		/*
 		rotation_sensor.get_angle();
 		int angle = rotation_sensor.get_angle();
 		if(angle > maxAngle)
@@ -341,15 +329,15 @@ void opcontrol()
 		{
 			minAngle = angle;
 		}
-
 		printf("MaxAngle=%d; MinAngle=%d; currentAngle=%d \r\n", maxAngle, minAngle, angle);
-		
+		*/
 
 		/*TANK CONTROL*/
-
-		//driveR_train.set_reversed(true);
-		//driveL_train.move(master.get_analog(ANALOG_LEFT_Y));
-		//driveR_train.move(master.get_analog(ANALOG_RIGHT_Y));
+		/*
+		driveR_train.set_reversed(true);
+		driveL_train.move(master.get_analog(ANALOG_LEFT_Y));
+		driveR_train.move(master.get_analog(ANALOG_RIGHT_Y));
+		*/
 		
 		/*ARCADE CONTROLL*/
 
@@ -363,7 +351,7 @@ void opcontrol()
 		driveR_train.move(right);
 		
 		
-	
+		//wing pneumatics (OPEN/CLOSE)
 		if (master.get_digital_new_press(DIGITAL_L1))
 		{
 			if (extend == true)
@@ -380,11 +368,12 @@ void opcontrol()
 			printf("Digital_L1 Pnuematic, Extend=%d \n", extend);
 		}
 
+		//launcher
 		if (master.get_digital_new_press(DIGITAL_R1))
 		{	
 
-			launchN.move_relative(150, 300);
-			launchP.move_relative(150, 300);
+			launchN.move_relative(250, 300);
+			launchP.move_relative(250, 300);
 			pros::delay(200);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
 			angle = rotation_sensor.get_angle();
 
@@ -409,11 +398,12 @@ void opcontrol()
 
 		}
 
+		//intake, expell ball (NEGATIVE)
 		if (master.get_digital_new_press(DIGITAL_A))
 		{	
 			if (intakeState == false)
 			{
-				intake1.move_velocity(-200);
+				intake.move_velocity(-200);
 
 				intakeState = true;
 
@@ -421,7 +411,7 @@ void opcontrol()
 			}
 			else
 			{
-				intake1.move_velocity(0);
+				intake.move_velocity(0);
 
 				intakeState = false;
 
@@ -429,11 +419,12 @@ void opcontrol()
 			}
 		}
 
+		//intake, collect ball (POSITIVE)
 		if (master.get_digital_new_press(DIGITAL_Y))
 		{	
 			if (intakeState == false)
 			{
-				intake1.move_velocity(200);
+				intake.move_velocity(200);
 
 				intakeState = true;
 
@@ -441,7 +432,7 @@ void opcontrol()
 			}
 			else
 			{
-				intake1.move_velocity(0);
+				intake.move_velocity(0);
 
 				intakeState = false;
 
@@ -451,8 +442,7 @@ void opcontrol()
 			printf("Digital_Y intake intakeState=%d \n", intakeState);
 		}
 
-		
-
+		//intake pneumatics (UP/DOWN)
 		if (master.get_digital_new_press(DIGITAL_X))
 		{
 
@@ -460,7 +450,7 @@ void opcontrol()
 			{
 				pros::c::adi_digital_write(ExpansionIntakePort, LOW);
 
-				intake1.move_velocity(0);
+				intake.move_velocity(0);
 
 				extendIntake = false;
 			}
@@ -474,26 +464,65 @@ void opcontrol()
 			printf("Digital_X Pnuematic Intake, Extend=%d \n", extend);
 
 		}
+
+		//launcher, move 100 ticks
 		if (master.get_digital_new_press(DIGITAL_RIGHT))
 		{
 			launchN.move_relative(100, 50);
 			launchP.move_relative(100, 50);
 		}
 
+		//launcher, move 500 ticks
 		if (master.get_digital_new_press(DIGITAL_LEFT))
 		{
 			launchN.move_relative(500, 100);
 			launchP.move_relative(500, 100);
 		}
 
+		//climb mech pneumatics (OPEN)
 		while (master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
 		{
-			if (!(count % 500)){
-      		
-      		//master.print(0, 0, "Counter: %d", count);
+			
+			if (!(count % 500))
+			{
+				printf("count = 500 \n");
+				
+				pros::c::adi_digital_write(ExpansionClimbPort, HIGH);
+				climbPos = true;
     		}
     		count++;
     		pros::delay(2);
+		}
+
+		//climbing mech pulley, pull string (POSITIVE) 
+		if(master.get_digital(DIGITAL_UP) and climbPos)
+		{
+			if(climb.get_target_velocity() != 0)
+			{
+				climb.move_velocity(0);
+				printf("climbmotor 0 \n");
+			}
+			else
+			{
+				climb.move_velocity(150);
+				printf("climbmotor positive \n");
+			}
+		}
+
+		//climbing mech pulley, loosen string (NEGATIVE)
+		if(master.get_digital(DIGITAL_DOWN) and climbPos)
+		{	
+			if(climb.get_target_velocity() != 0)
+			{
+				climb.move_velocity(0);
+				printf("climbmotor 0 \n");
+			}
+			else
+			{
+				climb.move_velocity(-150);
+				printf("climbmotor negative \n");
+			}
+
 		}
 		
 		count = 0;
