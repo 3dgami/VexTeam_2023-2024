@@ -1,2 +1,2 @@
-# VEX-949Z_2023-24
+# Team-949Z_VEX_23-24
 Welcome to VEX Robotics team
