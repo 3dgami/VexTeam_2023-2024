@@ -1,6 +1,4 @@
 #include "main.h"
-#include "selection.h"
-//#include "selection.ccp"
 
 //update all motor ports if needed
 pros::Controller master{CONTROLLER_MASTER};	
@@ -59,7 +57,7 @@ void driveTrain(int distance)
 
 	driveL_train.set_reversed(true);
 	int startPos = getPos();
-	double kp = 10.0;
+	double kp = 15.0;
 	double ki = 0.2;
 	double kd = -0.15;   /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output PS 
@@ -98,7 +96,7 @@ void driveTrain(int distance)
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (((P + D) + (600*sign)));
+		int output = (((P + D) + (3000*sign)));
 
 		printf("O=%D, P=%0.2f, D=%0.2f, Position=%d, startPos=%d Err=%d\n",output, P, D, Pos, startPos, errorTerm);
 
@@ -111,6 +109,7 @@ void driveTrain(int distance)
 	driveL_train.move_voltage(0);
 	driveR_train.move_voltage(0);
 	printf("End\nErr=%d", errorTerm);
+	driveL_train.set_reversed(false);
 
 	return;
 }
@@ -124,7 +123,7 @@ void turn(int angle)
 
 
 	int startPos = getPos();
-	double kp = 7.0;
+	double kp = 1.0;
 	//double ki = 0.2;
 	double kd = -0.05; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
@@ -167,7 +166,7 @@ void turn(int angle)
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = ((P + D) + (1100*sign));
+		int output = ((P + D) + (2000*sign));
 
 		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d\n, turn=%d", errorTerm, P, D, startPos, pos, output, turnTicks);
 
@@ -197,10 +196,7 @@ void on_center_button() {}
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
-void initialize()
-{
-	selector::init();
-}
+void initialize(){}
 
 /**
  * Runs while the robot is in the disabled state of Field Management System or
@@ -234,57 +230,50 @@ void competition_initialize()
  */
 void autonomous() 
 {
+	/*driveTrain(1250);
+	pros::delay(500);
+	turn(90);*/
 	auto ExpansionPort = 'H';
 	auto ExpansionIntakePort = 'G';
 	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionPort, HIGH);
+	pros::c::adi_digital_write(ExpansionPort, LOW);
 	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
+	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
 	
 	//1250 ticks = one block
 
-	if(selector::auton == 1, -1)
-	{
-		//score alliance ball
-		driveTrain(1500);
-		pros::delay(100);
-		turn(-45);
-		pros::delay(100);
-		driveTrain(750);
-		pros::delay(100);
-		driveTrain(-800);
+	/*pros::c::adi_digital_write(ExpansionPort, HIGH);
+	pros::delay(200);
+	driveTrain(1800);
+	pros::delay(200);
+	pros::c::adi_digital_write(ExpansionPort, LOW);
+	pros::delay(250);
+	driveTrain(3500);*/
 
-		//move to center to block opponent
-		pros::delay(100);
-		turn(-90);
-		pros::delay(100);
-		driveTrain(1100);
-		pros::delay(100);
-		turn(90);
-		pros::delay(100);
-		driveTrain(1250*1.5);
+	//score alliance ball
+	//driveTrain(1500);
+	//pros::delay(100);
+	//turn(-45);
+	//pros::delay(100);
+	//driveTrain(500);
+	//pros::delay(100);
+	//driveTrain(-800);
 
-
-		//shut down all motors
-		driveR_train.move_voltage(0);
-		driveL_train.move_voltage(0);
-		pros::c::adi_digital_write(ExpansionPort, LOW);
-	}
-
-	if(selector::auton == -3,3)
-	{
-		driveR_train.move_voltage(0);
-		driveL_train.move_voltage(0);
-		pros::c::adi_digital_write(ExpansionPort, LOW);
-	}
-
-	if(selector::auton == 0)
-	{
-		//will put skills in here
-	}
+	//move to center to block opponent
+	/*pros::delay(100);
+	turn(-90);
+	pros::delay(100);
+	driveTrain(1100);
+	pros::delay(100);
+	turn(90);
+	pros::delay(100);
+	driveTrain(1250*1.5);*/
 
 
-
+	//shut down all motors
+	driveR_train.move_voltage(0);
+	driveL_train.move_voltage(0);
+	pros::c::adi_digital_write(ExpansionPort, LOW);
 }
 
 /**
@@ -303,14 +292,17 @@ void autonomous()
 
 void opcontrol()
 {
+
+	driveL_train.set_reversed(false);
+	
 	auto ExpansionPort = 'H';
 	auto ExpansionIntakePort = 'G';
 	auto ExpansionClimbPort = 'F';
 
 	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionPort, HIGH);
+	pros::c::adi_digital_write(ExpansionPort, LOW);
 	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
+	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
 	pros::c::adi_pin_mode(ExpansionClimbPort, OUTPUT);
 	pros::c::adi_digital_write(ExpansionClimbPort, LOW);
 
@@ -330,6 +322,7 @@ void opcontrol()
 	int count = 0;
 
 	int angle = rotation_sensor.get_angle();
+	
 
 
 	while(true)
@@ -392,8 +385,8 @@ void opcontrol()
 		if (master.get_digital_new_press(DIGITAL_R1))
 		{	
 
-			launchN.move_relative(250, 300);
-			launchP.move_relative(250, 300);
+			launchN.move_relative(200, 150);
+			launchP.move_relative(200, 150);
 			pros::delay(200);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
 			angle = rotation_sensor.get_angle();
 
@@ -500,22 +493,24 @@ void opcontrol()
 		}
 
 		//climb mech pneumatics (OPEN)
-		while (master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
-		{
-			
-			if (!(count % 500))
+		if(master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
+		{	
+			printf("count = 500 \n");
+
+			if(climbPos == false)
 			{
-				printf("count = 500 \n");
-				
 				pros::c::adi_digital_write(ExpansionClimbPort, HIGH);
 				climbPos = true;
-    		}
-    		count++;
-    		pros::delay(2);
+			}
+			else
+			{
+				pros::c::adi_digital_write(ExpansionClimbPort, LOW);
+				climbPos = false;
+			}
 		}
 
 		//climbing mech pulley, pull string (POSITIVE) 
-		if(master.get_digital(DIGITAL_UP) and climbPos)
+		if(master.get_digital_new_press(DIGITAL_UP) and climbPos)
 		{
 			if(climb.get_target_velocity() != 0)
 			{
@@ -530,7 +525,7 @@ void opcontrol()
 		}
 
 		//climbing mech pulley, loosen string (NEGATIVE)
-		if(master.get_digital(DIGITAL_DOWN) and climbPos)
+		if(master.get_digital_new_press(DIGITAL_DOWN) and climbPos)
 		{	
 			if(climb.get_target_velocity() != 0)
 			{
