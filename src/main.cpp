@@ -116,7 +116,7 @@ void driveTrain(int distance)
 
 void turn(int angle)
 {
-	driveL_train.set_reversed(true);
+	driveL_train.set_reversed(false);
 	double CircleTicks = 2450;
 	int turnTicks = (CircleTicks/360) * angle;
 
@@ -313,6 +313,8 @@ void opcontrol()
 
 	int dead_Zone = 10;
 	int count = 0;
+	int left;
+	int right;
 
 	int angle = rotation_sensor.get_angle();
 	
@@ -350,8 +352,16 @@ void opcontrol()
 		int power = -(master.get_analog(ANALOG_RIGHT_X));
 		int turn = master.get_analog(ANALOG_LEFT_Y);
 
-		int left = power - turn;
-		int right = power + turn;
+		if(power == 0 or turn == 0)
+		{
+			left = power - turn;
+			right = power + turn;
+		}
+		else
+		{
+			left = (power - turn) - 30;
+			right = (power + turn) - 30;
+		}
 
 		driveL_train.move(left);
 		driveR_train.move(right);
