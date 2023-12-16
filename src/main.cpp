@@ -96,7 +96,7 @@ void driveTrain(int distance)
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (((P + D) + (3000*sign)));
+		int output = (((P + D) + (1000*sign)));
 
 		printf("O=%D, P=%0.2f, D=%0.2f, Position=%d, startPos=%d Err=%d\n",output, P, D, Pos, startPos, errorTerm);
 
@@ -116,7 +116,7 @@ void driveTrain(int distance)
 
 void turn(int angle)
 {
-	driveL_train.set_reversed(false);
+	driveL_train.set_reversed(true);
 	double CircleTicks = 2450;
 	int turnTicks = (CircleTicks/360) * angle;
 
@@ -240,24 +240,17 @@ void autonomous()
 	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
 	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
 	
-	//1250 ticks = one block
+	//1500? ticks = one block
 
-	/*pros::c::adi_digital_write(ExpansionPort, HIGH);
-	pros::delay(200);
-	driveTrain(1800);
-	pros::delay(200);
-	pros::c::adi_digital_write(ExpansionPort, LOW);
-	pros::delay(250);
-	driveTrain(3500);*/
-
-	//score alliance ball
-	//driveTrain(1500);
-	//pros::delay(100);
-	//turn(-45);
-	//pros::delay(100);
-	//driveTrain(500);
-	//pros::delay(100);
-	//driveTrain(-800);
+	turn(45);
+	pros::delay(100);
+	driveTrain(1500);
+	pros::delay(100);
+	turn(-45);
+	pros::delay(100);
+	driveTrain(500);
+	pros::delay(100);
+	driveTrain(-1200);
 
 	//move to center to block opponent
 	/*pros::delay(100);
