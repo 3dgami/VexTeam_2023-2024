@@ -59,7 +59,7 @@ void driveTrain(int distance)
 	int startPos = getPos();
 	double kp = 15.0;
 	double ki = 0.2;
-	double kd = -0.15;   /*derivitive should control and stop overshooting this can be done
+	double kd = -7.0;   /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output PS 
 						*/
 	double P;
@@ -69,6 +69,7 @@ void driveTrain(int distance)
 	int errorTerm;
 	int errorTotal = 0;
 	int sign;
+	int timeout = 0;
 
 	if (distance < 0){
 		sign = -1;
@@ -79,8 +80,15 @@ void driveTrain(int distance)
 	
 	errorTerm = distance + startPos - getPos();
 
-	while (errorTerm > 1 or errorTerm < -1)
+	while (errorTerm > 1 or errorTerm < -1 and timeout <= 100)
 	{
+		if (errorTerm < 0){
+		sign = -1;
+		}
+		else{
+			sign = 1;
+		}
+
 		errorTerm = distance + startPos - getPos();
 
 		int Pos = getPos();
@@ -94,9 +102,9 @@ void driveTrain(int distance)
 
 
 		P = errorTerm * kp;
-		//I = errorTotal * ki;
+		I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (((P + D) + (1000*sign)));
+		int output = (((P + I + D) + (1000*sign)));
 
 		printf("O=%D, P=%0.2f, D=%0.2f, Position=%d, startPos=%d Err=%d\n",output, P, D, Pos, startPos, errorTerm);
 
@@ -104,6 +112,7 @@ void driveTrain(int distance)
 		driveR_train.move_voltage(output);
 
 		lastError = errorTerm;
+		timeout =+ 1;
 		pros::delay(20);
 	}
 	driveL_train.move_voltage(0);
@@ -123,7 +132,7 @@ void turn(int angle)
 
 
 	int startPos = getPos();
-	double kp = 1.0;
+	double kp = 8.0;
 	//double ki = 0.2;
 	double kd = -0.05; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
@@ -135,6 +144,7 @@ void turn(int angle)
 	int errorTerm;
 	int errorTotal = 0;
 	int sign = 1;
+	int timeout = 0;
 
 	if (angle < 0)
 	{
@@ -146,12 +156,18 @@ void turn(int angle)
 	}
 
 	printf("start\n");
-	while (errorTerm > 1 or errorTerm < -1)
+	while (errorTerm > 1 or errorTerm < -1 and timeout <= 100)
 	{
 		errorTerm = (turnTicks + startPos) - floor(getPos());
 
-		
-
+		if (errorTerm < 0)
+		{
+			sign = -1;
+		}
+		else
+		{
+			sign = 1;
+		}
 
 		int pos = getPos();
 
@@ -168,13 +184,14 @@ void turn(int angle)
 		D = (lastError - errorTerm) * kd;
 		int output = ((P + D) + (2000*sign));
 
-		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d\n, turn=%d", errorTerm, P, D, startPos, pos, output, turnTicks);
+		printf("O=%d, err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, timeout=%d\n", output, errorTerm, P, D, startPos, pos, timeout);
 
 
 		driveL_train.move_voltage(output);
 		driveR_train.move_voltage(output);
 
 		lastError = errorTerm;
+		timeout += 1;
 		pros::delay(10);
 	}
 	driveL_train.move_voltage(0);
@@ -241,28 +258,7 @@ void autonomous()
 	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
 	
 	//1500? ticks = one block
-
-	turn(45);
-	pros::delay(100);
-	driveTrain(1500);
-	pros::delay(100);
-	turn(-45);
-	pros::delay(100);
-	driveTrain(500);
-	pros::delay(100);
-	driveTrain(-1200);
-
-	//move to center to block opponent
-	/*pros::delay(100);
-	turn(-90);
-	pros::delay(100);
-	driveTrain(1100);
-	pros::delay(100);
-	turn(90);
-	pros::delay(100);
-	driveTrain(1250*1.5);*/
-
-
+	
 	//shut down all motors
 	driveR_train.move_voltage(0);
 	driveL_train.move_voltage(0);
@@ -352,16 +348,8 @@ void opcontrol()
 		int power = -(master.get_analog(ANALOG_RIGHT_X));
 		int turn = master.get_analog(ANALOG_LEFT_Y);
 
-		if(power == 0 or turn == 0)
-		{
-			left = power - turn;
-			right = power + turn;
-		}
-		else
-		{
-			left = (power - turn) - 30;
-			right = (power + turn) - 30;
-		}
+		left = power - turn;
+		right = power + turn;
 
 		driveL_train.move(left);
 		driveR_train.move(right);
@@ -388,8 +376,8 @@ void opcontrol()
 		if (master.get_digital_new_press(DIGITAL_R1))
 		{	
 
-			launchN.move_relative(200, 150);
-			launchP.move_relative(200, 150);
+			launchN.move_relative(250, 150);
+			launchP.move_relative(250, 150);
 			pros::delay(200);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
 			angle = rotation_sensor.get_angle();
 
@@ -496,7 +484,7 @@ void opcontrol()
 		}
 
 		//climb mech pneumatics (OPEN)
-		if(master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
+		/*if(master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
 		{	
 			printf("count = 500 \n");
 
@@ -541,7 +529,7 @@ void opcontrol()
 				printf("climbmotor negative \n");
 			}
 
-		}
+		}*/
 		
 		count = 0;
 		pros::delay(10);
