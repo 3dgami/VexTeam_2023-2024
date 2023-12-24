@@ -66,7 +66,7 @@ void driveTrain(int distance)
 	double I;
 	double D;
 	int lastError = 0;
-	int errorTerm;
+	int errorTerm = 100;
 	int errorTotal = 0;
 	int sign;
 	int timeout = 0;
@@ -78,7 +78,7 @@ void driveTrain(int distance)
 			sign = 1;
 		}
 	
-	errorTerm = distance + startPos - getPos();
+	//errorTerm = distance + startPos - getPos();
 
 	while (errorTerm > 1 or errorTerm < -1 and timeout <= 100)
 	{
@@ -104,7 +104,7 @@ void driveTrain(int distance)
 		P = errorTerm * kp;
 		I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (((P + I + D) + (1000*sign)));
+		int output = ((P + I + D + 1000) * sign);
 
 		printf("O=%D, P=%0.2f, D=%0.2f, Position=%d, startPos=%d Err=%d\n",output, P, D, Pos, startPos, errorTerm);
 
@@ -112,7 +112,7 @@ void driveTrain(int distance)
 		driveR_train.move_voltage(output);
 
 		lastError = errorTerm;
-		timeout =+ 1;
+		timeout += 1;
 		pros::delay(20);
 	}
 	driveL_train.move_voltage(0);
