@@ -1,41 +1,25 @@
 #include "main.h"
 
-//update all motor ports if needed
+
 pros::Controller master{CONTROLLER_MASTER};	
-pros::Motor climb(13); 
-pros::Motor intake(6);
-pros::Motor launchN(14, true);
+pros::Motor intake1(1);
+pros::Motor intake2(10, true);
+pros::Motor launchN(14, true);	//update all motor ports
 pros::Motor launchP(15);
-pros::Motor right_front(20);
-pros::Motor left_front(10);
-pros::Motor left_back(1);//
-pros::Motor right_back(11);
+pros::Motor right_front(11);
+pros::Motor left_front(20);
+pros::Motor left_back(19);
+pros::Motor right_back(12);
 pros::Motor_Group driveL_train({left_front, left_back});
 pros::Motor_Group driveR_train({right_front, right_back});
-int rotationPort = 12;
-int maxAngle = -10;
-int minAngle = 1000000000;
-int ShootPos = 8800;
-int UpPos = 3500;
 
 
-void SetDriveRelative(int ticks, int Lspeed, int Rspeed)
-	{
+void driveU_train( int Rspeed, int Lspeed)
+{
+	driveL_train.move(Lspeed);
+	driveR_train.move(Rspeed);
 
-		left_front.move_relative(-(ticks), Lspeed);
-		left_back.move_relative(-(ticks), Lspeed);
-		right_front.move_relative(ticks, Rspeed);
-		right_back.move_relative(ticks, Rspeed);
-	}
-
-void SetDrive(int Lspeed, int Rspeed)
-	{
-
-		left_front.move(-(Lspeed));
-		left_back.move(-(Lspeed));
-		right_front.move(Rspeed);
-		right_back.move(Rspeed);
-	}
+}
 
 double getLeftPos()
 {
@@ -54,22 +38,19 @@ double getPos()
 
 void driveTrain(int distance)
 {
-
-	driveL_train.set_reversed(true);
 	int startPos = getPos();
 	double kp = 15.0;
 	double ki = 0.2;
-	double kd = -7.0;   /*derivitive should control and stop overshooting this can be done
+	double kd = -0.15;   /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output PS 
 						*/
 	double P;
 	double I;
 	double D;
 	int lastError = 0;
-	int errorTerm = 100;
+	int errorTerm;
 	int errorTotal = 0;
 	int sign;
-	int timeout = 0;
 
 	if (distance < 0){
 		sign = -1;
@@ -77,21 +58,12 @@ void driveTrain(int distance)
 	else{
 			sign = 1;
 		}
+
 	
-	//errorTerm = distance + startPos - getPos();
 
-	while (errorTerm > 1 or errorTerm < -1 and timeout <= 100)
+	while (errorTerm > 1)
 	{
-		if (errorTerm < 0){
-		sign = -1;
-		}
-		else{
-			sign = 1;
-		}
-
-		errorTerm = distance + startPos - getPos();
-
-		int Pos = getPos();
+		errorTerm = abs((distance) + startPos) - getPos();
 
 		errorTotal = errorTotal + errorTerm;
 
@@ -104,21 +76,19 @@ void driveTrain(int distance)
 		P = errorTerm * kp;
 		I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = ((P + I + D + 1000) * sign);
+		int output = (((P + I + D) + 200)* sign);
 
-		printf("O=%D, P=%0.2f, D=%0.2f, Position=%d, startPos=%d Err=%d\n",output, P, D, Pos, startPos, errorTerm);
+		printf("O=%D, P=%0.2f, D=%0.2f, Err=%d\n",output, P, D, errorTerm);
 
 		driveL_train.move_voltage(output);
 		driveR_train.move_voltage(output);
 
 		lastError = errorTerm;
-		timeout += 1;
 		pros::delay(20);
 	}
 	driveL_train.move_voltage(0);
 	driveR_train.move_voltage(0);
 	printf("End\nErr=%d", errorTerm);
-	driveL_train.set_reversed(false);
 
 	return;
 }
@@ -126,13 +96,11 @@ void driveTrain(int distance)
 void turn(int angle)
 {
 	driveL_train.set_reversed(false);
-	double CircleTicks = 2450;
-	int turnTicks = (CircleTicks/360) * angle;
-
-
+	double CircleTicks = 1930;
+	int turnTicks = floor((CircleTicks/360) * angle);
 
 	int startPos = getPos();
-	double kp = 8.0;
+	double kp = 9.0;
 	//double ki = 0.2;
 	double kd = -0.05; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
@@ -144,32 +112,11 @@ void turn(int angle)
 	int errorTerm;
 	int errorTotal = 0;
 	int sign = 1;
-	int timeout = 0;
-
-	if (angle < 0)
-	{
-		sign = -1;
-	}
-	else
-	{
-		sign = 1;
-	}
 
 	printf("start\n");
-	while (errorTerm > 1 or errorTerm < -1 and timeout <= 100)
+	while (errorTerm > 0)
 	{
-		errorTerm = (turnTicks + startPos) - floor(getPos());
-
-		if (errorTerm < 0)
-		{
-			sign = -1;
-		}
-		else
-		{
-			sign = 1;
-		}
-
-		int pos = getPos();
+		errorTerm = (turnTicks + startPos) - getPos();
 
 		errorTotal = errorTotal + errorTerm;
 		/*
@@ -182,16 +129,14 @@ void turn(int angle)
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = ((P + D) + (2000*sign));
+		int output = (P + D) + 900;
 
-		printf("O=%d, err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, timeout=%d\n", output, errorTerm, P, D, startPos, pos, timeout);
-
+		printf("step err=%d, P=%.02f, D=%.02f, O=%d\n, turn=%d", errorTerm, P, D, output, turnTicks);
 
 		driveL_train.move_voltage(output);
 		driveR_train.move_voltage(output);
 
 		lastError = errorTerm;
-		timeout += 1;
 		pros::delay(10);
 	}
 	driveL_train.move_voltage(0);
@@ -205,6 +150,12 @@ void turn(int angle)
 	return;
 }
 
+/**
+ * A callback function for LLEMU's center button.
+ *
+ * When this callback is fired, it will toggle line 2 of the LCD text between
+ * "I was pressed!" and nothing.
+ */
 void on_center_button() {}
 
 /**
@@ -213,7 +164,7 @@ void on_center_button() {}
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
-void initialize(){}
+void initialize() {}
 
 /**
  * Runs while the robot is in the disabled state of Field Management System or
@@ -232,7 +183,18 @@ void disabled() {}
  * starts.
  */
 void competition_initialize()
-{}
+{
+	/*auto ExpansionPort = 'A';
+	auto ExpansionIntakePort = 'B';
+	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
+	pros::c::adi_digital_write(ExpansionPort, LOW);
+	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
+	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+	*/
+	
+
+
+}
 
 /**
  * Runs the user autonomous code. This function will be started in its own task
@@ -247,22 +209,28 @@ void competition_initialize()
  */
 void autonomous() 
 {
-	/*driveTrain(1250);
-	pros::delay(500);
-	turn(90);*/
-	auto ExpansionPort = 'H';
-	auto ExpansionIntakePort = 'G';
+	auto ExpansionPort = 'A';
+	auto ExpansionIntakePort = 'B';
 	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
 	pros::c::adi_digital_write(ExpansionPort, LOW);
 	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
 	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+	/*
+	*/
+	/*driveTrain(-1450*4);
+	pros::delay(250);
+	turn(270);
+	pros::delay(250);
+	intake1.move_velocity(200);
+	intake2.move_velocity(200);
+	pros::delay(250);
+	driveTrain(500);
+	pros::delay(250);
+	driveTrain(-500);*/
+	pros::c::adi_digital_write(ExpansionPort, HIGH);
 	
-	//1500? ticks = one block
-	
-	//shut down all motors
-	driveR_train.move_voltage(0);
-	driveL_train.move_voltage(0);
-	pros::c::adi_digital_write(ExpansionPort, LOW);
+
+
 }
 
 /**
@@ -281,81 +249,41 @@ void autonomous()
 
 void opcontrol()
 {
-
-	driveL_train.set_reversed(false);
-	
-	auto ExpansionPort = 'H';
-	auto ExpansionIntakePort = 'G';
-	auto ExpansionClimbPort = 'F';
-
+	int turned = 0;
+	double multiply = 0.0075 * turned;
+	auto ExpansionPort = 'A';
+	auto ExpansionIntakePort = 'B';
 	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
 	pros::c::adi_digital_write(ExpansionPort, LOW);
 	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
 	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
-	pros::c::adi_pin_mode(ExpansionClimbPort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionClimbPort, LOW);
-
-	pros::Rotation rotation_sensor(rotationPort);
-
+	//pros::ADIAnalogOut piston (1);//get port
 	pros::Controller master(CONTROLLER_MASTER);
+	//launchN.set_reversed(true);
 
 
 	bool intakeState = false;
 	bool extend = false;
 	bool extendIntake = false;
-	bool extendClimb = false;
-
-	bool climbPos = false;
-
 	int dead_Zone = 10;
-	int count = 0;
-	int left;
-	int right;
-
-	int angle = rotation_sensor.get_angle();
-	
-
 
 	while(true)
 	{
-
-
-		/*USE TO CALIBRATE TURN SENSOR FOR LAUNCHER*/
-		/*
-		rotation_sensor.get_angle();
-		int angle = rotation_sensor.get_angle();
-		if(angle > maxAngle)
-		{
-			maxAngle = angle;		
-		}
-
-		if (angle < minAngle)
-		{
-			minAngle = angle;
-		}
-		printf("MaxAngle=%d; MinAngle=%d; currentAngle=%d \r\n", maxAngle, minAngle, angle);
-		*/
-
-		/*TANK CONTROL*/
-		/*
-		driveR_train.set_reversed(true);
-		driveL_train.move(master.get_analog(ANALOG_LEFT_Y));
-		driveR_train.move(master.get_analog(ANALOG_RIGHT_Y));
-		*/
+		//driveR_train.set_reversed(true);
+		//driveL_train.move(master.get_analog(ANALOG_LEFT_Y));
+		//driveR_train.move(master.get_analog(ANALOG_RIGHT_Y));
 		
 		/*ARCADE CONTROLL*/
 
 		int power = -(master.get_analog(ANALOG_RIGHT_X));
 		int turn = master.get_analog(ANALOG_LEFT_Y);
-
-		left = power - turn;
-		right = power + turn;
-
+		int left = power - turn;
+		int right = power + turn;
 		driveL_train.move(left);
 		driveR_train.move(right);
 		
 		
-		//wing pneumatics (OPEN/CLOSE)
+	
 		if (master.get_digital_new_press(DIGITAL_L1))
 		{
 			if (extend == true)
@@ -372,169 +300,88 @@ void opcontrol()
 			printf("Digital_L1 Pnuematic, Extend=%d \n", extend);
 		}
 
-		//launcher
 		if (master.get_digital_new_press(DIGITAL_R1))
-		{	
+		{
 
-			launchN.move_relative(250, 150);
-			launchP.move_relative(250, 150);
-			pros::delay(200);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
-			angle = rotation_sensor.get_angle();
-
-			while(angle < (ShootPos))
-			{	
-				if(angle >= (ShootPos))
-				{
-					break;
-				}
-				angle = rotation_sensor.get_angle();
-				launchN.move_velocity(300);
-				launchP.move_velocity(300);
-				
-				printf("angle=%d \n", angle);
-				pros::delay(5);
-
-			}
-			launchN.move_velocity(0);
-			launchP.move_velocity(0);
-
-			printf("Digital_R1 launch \n");
+			launchN.move_relative(1800 * (1 + multiply), 150);// had times 3 // 100
+			launchP.move_relative(1800 * (1 + multiply), 150);
+			turned += 1;
+			double multiply = 0.006 * turned;
+			printf("Digital_R1 launch, turned=%d, multiply=%f\n", turned, multiply);
 
 		}
 
-		//intake, expell ball (NEGATIVE)
 		if (master.get_digital_new_press(DIGITAL_A))
 		{	
 			if (intakeState == false)
 			{
-				intake.move_velocity(-200);
-
+				intake1.move_velocity(-200);
+				intake2.move_velocity(-200);
 				intakeState = true;
-
-				printf("intakeState = true");
 			}
 			else
 			{
-				intake.move_velocity(0);
-
+				intake1.move_velocity(0);
+				intake2.move_velocity(0);
 				intakeState = false;
-
-				printf("intakeState = false");
 			}
 		}
 
-		//intake, collect ball (POSITIVE)
 		if (master.get_digital_new_press(DIGITAL_Y))
 		{	
 			if (intakeState == false)
 			{
-				intake.move_velocity(200);
-
+				intake1.move_velocity(200);
+				intake2.move_velocity(200);
 				intakeState = true;
-
-				printf("intakeState = true");
 			}
 			else
 			{
-				intake.move_velocity(0);
-
+				intake1.move_velocity(0);
+				intake2.move_velocity(0);
 				intakeState = false;
-
-				printf("intakeState = false");
 			}
 		
 			printf("Digital_Y intake intakeState=%d \n", intakeState);
 		}
 
-		//intake pneumatics (UP/DOWN)
+		
+
 		if (master.get_digital_new_press(DIGITAL_X))
 		{
 
 			if (extendIntake == true)
 			{
 				pros::c::adi_digital_write(ExpansionIntakePort, LOW);
-
-				intake.move_velocity(0);
-
+				intake1.move_velocity(0);
+				intake2.move_velocity(0);
 				extendIntake = false;
 			}
 			else
 			{
 				pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
-
 				extendIntake = true;
 			}
 		
 			printf("Digital_X Pnuematic Intake, Extend=%d \n", extend);
+			printf("Digital_X \n");
 
 		}
-
-		//launcher, move 100 ticks
 		if (master.get_digital_new_press(DIGITAL_RIGHT))
-		{
-			launchN.move_relative(100, 50);
-			launchP.move_relative(100, 50);
-		}
-
-		//launcher, move 500 ticks
-		if (master.get_digital_new_press(DIGITAL_LEFT))
 		{
 			launchN.move_relative(500, 100);
 			launchP.move_relative(500, 100);
 		}
 
-		//climb mech pneumatics (OPEN)
-		/*if(master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
-		{	
-			printf("count = 500 \n");
-
-			if(climbPos == false)
-			{
-				pros::c::adi_digital_write(ExpansionClimbPort, HIGH);
-				climbPos = true;
-			}
-			else
-			{
-				pros::c::adi_digital_write(ExpansionClimbPort, LOW);
-				climbPos = false;
-			}
-		}
-
-		//climbing mech pulley, pull string (POSITIVE) 
-		if(master.get_digital_new_press(DIGITAL_UP) and climbPos)
+		if (master.get_digital_new_press(DIGITAL_LEFT))
 		{
-			if(climb.get_target_velocity() != 0)
-			{
-				climb.move_velocity(0);
-				printf("climbmotor 0 \n");
-			}
-			else
-			{
-				climb.move_velocity(150);
-				printf("climbmotor positive \n");
-			}
+			launchN.move_relative(100, 50);
+			launchP.move_relative(100, 50);
 		}
 
-		//climbing mech pulley, loosen string (NEGATIVE)
-		if(master.get_digital_new_press(DIGITAL_DOWN) and climbPos)
-		{	
-			if(climb.get_target_velocity() != 0)
-			{
-				climb.move_velocity(0);
-				printf("climbmotor 0 \n");
-			}
-			else
-			{
-				climb.move_velocity(-150);
-				printf("climbmotor negative \n");
-			}
-
-		}*/
-		
-		count = 0;
 		pros::delay(10);
-		
 	
 	}
 }
+
 
