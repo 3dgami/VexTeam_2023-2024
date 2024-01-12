@@ -63,19 +63,14 @@ void driveTrain(int distance)
 						  by having kd be negative or having a (P + I - D) for the output PS 
 						*/
 	double P;
-	double I;
+	double I = 0;
 	double D;
 	int lastError = 0;
-	int errorTerm;
+	int errorTerm = 10000000000;
 	int errorTotal = 0;
 	int sign;
 
-	if (distance < 0){
-		sign = -1;
-		}
-	else{
-			sign = 1;
-		}
+	sign = (distance < 0) ? -1 : 1;
 	
 	errorTerm = distance + startPos - getPos();
 
@@ -87,21 +82,9 @@ void driveTrain(int distance)
 
 		errorTotal = errorTotal + errorTerm;
 
-		if (errorTerm < 0)
-			{
-				sign = -1;
-			}
-		else
-			{
-				sign = 1;
-			}
-			
+		sign = (errorTerm < 0) ? -1 : 1;
 
-		if (errorTotal > 50 / ki)
-		{
-			errorTotal = 50 / ki;
-		}
-
+		errorTotal = (errorTotal > 50 / ki) ? 50 / ki : errorTotal;
 
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
@@ -134,55 +117,36 @@ void turn(int angle)
 
 	int startPos = getPos();
 	double kp = 1.0;
-	//double ki = 0.2;
+	double ki = 0.2;
 	double kd = -0.05; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
 						*/
 	double P;
-	//double I;
+	double I;
 	double D;
 	int lastError = 0;
 	int errorTerm;
 	int errorTotal = 0;
 	int sign = 1;
 
-	if (angle < 0)
-	{
-		sign = -1;
-	}
-	else
-	{
-		sign = 1;
-	}
+	sign = (sign < 0) ? -1 : 1;
 
 	printf("start\n");
 	while (errorTerm > 1 or errorTerm < -1)
 	{
 		errorTerm = (turnTicks + startPos) - floor(getPos());
 
-		
-		if (errorTerm < 0)
-		{
-			sign = -1;
-		}
-		else
-		{
-			sign = 1;
-		}
-
+		sign = (errorTerm < 0) ? -1 : 1;
 
 		int pos = getPos();
 
 		errorTotal = errorTotal + errorTerm;
-		/*
-		if (errorTotal > 50 / ki)
-		{
-			errorTotal = 50 / ki;
-		}
-		*/	
+
+		errorTotal = (errorTotal > 50 / ki) ? 50 / ki : errorTotal;
+
 
 		P = errorTerm * kp;
-		//I = errorTotal * ki;
+		I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
 		int output = ((P + D) + (2000*sign));
 
@@ -259,6 +223,32 @@ void autonomous()
 	pros::c::adi_digital_write(ExpansionHook, LOW);
 	
 	//1500? ticks = one block
+	pros::c::adi_digital_write(ExpansionHook, HIGH);
+	turn(-90);
+	pros::c::adi_digital_write(ExpansionHook, LOW);
+	turn(90);
+	driveTrain(1500);
+	turn(-45);
+	driveTrain(1300);
+	driveTrain(300);
+	turn(90);
+	driveTrain(4500);
+	pros::c::adi_digital_write(ExpansionHook, HIGH);
+
+
+	/*
+	
+	//1500? ticks = one block
+	pros::c::adi_digital_write(ExpansionHook, HIGH);
+	driveTrain(500);
+	driveTrain(-500);
+	pros::c::adi_digital_write(ExpansionHook, LOW);
+	turn(225); // tweak
+	pros::c::adi_digital_write(ExpansionPort, HIGH);
+	driveTrain(1600);
+	turn(90);
+	driveTrain(1300);
+	*/
 
 	//shut down all motors
 	driveR_train.move_voltage(0);
@@ -532,5 +522,4 @@ void opcontrol()
 	
 	}
 }
-
 
