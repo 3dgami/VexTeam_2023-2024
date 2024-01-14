@@ -223,7 +223,7 @@ void autonomous()
 	pros::c::adi_digital_write(ExpansionHook, LOW);
 	
 	//1500? ticks = one block
-	pros::c::adi_digital_write(ExpansionHook, HIGH);
+	/*pros::c::adi_digital_write(ExpansionHook, HIGH);
 	turn(-90);
 	pros::c::adi_digital_write(ExpansionHook, LOW);
 	turn(90);
@@ -233,7 +233,7 @@ void autonomous()
 	driveTrain(300);
 	turn(90);
 	driveTrain(4500);
-	pros::c::adi_digital_write(ExpansionHook, HIGH);
+	pros::c::adi_digital_write(ExpansionHook, HIGH);*/
 
 
 	/*
