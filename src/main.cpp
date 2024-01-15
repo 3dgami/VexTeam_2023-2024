@@ -1,4 +1,6 @@
 #include "main.h"
+#include "selection.h"
+#include "selection.ccp"
 
 //update all motor ports if needed
 pros::Controller master{CONTROLLER_MASTER};	
@@ -15,8 +17,8 @@ pros::Motor_Group driveR_train({right_front, right_back});
 int rotationPort = 12;
 int maxAngle = -10;
 int minAngle = 1000000000;
-int ShootPos = 8800;
-int UpPos = 3500;
+int ShootPos = 8500;
+int UpPos = 2153;
 
 
 void SetDriveRelative(int ticks, int Lspeed, int Rspeed)
@@ -57,16 +59,16 @@ void driveTrain(int distance)
 
 	driveL_train.set_reversed(true);
 	int startPos = getPos();
-	double kp = 15.0;
+	double kp = 13.00;
 	double ki = 0.2;
-	double kd = -0.15;   /*derivitive should control and stop overshooting this can be done
+	double kd = -8.50;   /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output PS 
 						*/
 	double P;
 	double I = 0;
 	double D;
 	int lastError = 0;
-	int errorTerm = 10000000000;
+	int errorTerm = 100000;
 	int errorTotal = 0;
 	int sign;
 
@@ -84,12 +86,13 @@ void driveTrain(int distance)
 
 		sign = (errorTerm < 0) ? -1 : 1;
 
+
 		errorTotal = (errorTotal > 50 / ki) ? 50 / ki : errorTotal;
 
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (((P + I + D) + 1000) * sign);
+		int output = (((P + I + D) + (1000 * sign)));
 
 		printf("O=%D, P=%0.2f, D=%0.2f, Position=%d, startPos=%d Err=%d\n",output, P, D, Pos, startPos, errorTerm);
 
@@ -110,15 +113,15 @@ void driveTrain(int distance)
 void turn(int angle)
 {
 	driveL_train.set_reversed(false);
-	double CircleTicks = 2450;
+	double CircleTicks = 2750;
 	int turnTicks = (CircleTicks/360) * angle;
 
 
 
 	int startPos = getPos();
-	double kp = 1.0;
+	double kp = 11.0;
 	double ki = 0.2;
-	double kd = -0.05; /*derivitive should control and stop overshooting this can be done
+	double kd = -5.50; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
 						*/
 	double P;
@@ -148,9 +151,10 @@ void turn(int angle)
 		P = errorTerm * kp;
 		I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = ((P + D) + (2000*sign));
+		int output = (((P + I + D)) + (1250 * sign));
 
-		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d\n, turn=%d", errorTerm, P, D, startPos, pos, output, turnTicks);
+
+		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d turn=%d \n", errorTerm, P, D, startPos, pos, output, turnTicks);
 
 
 		driveL_train.move_voltage(output);
@@ -163,8 +167,7 @@ void turn(int angle)
 	driveR_train.move_voltage(0);
 	driveL_train.set_reversed(true);
 
-	pros::delay(1000);
-	errorTerm = abs((turnTicks) + startPos) - getPos();
+	pros::delay(10);
 	printf("\nDone err=%d\n, O=%d", errorTerm, turnTicks);
 
 	return;
@@ -178,7 +181,10 @@ void on_center_button() {}
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
-void initialize(){}
+void initialize()
+{
+	selector::init();
+}
 
 /**
  * Runs while the robot is in the disabled state of Field Management System or
@@ -212,17 +218,128 @@ void competition_initialize()
  */
 void autonomous() 
 {
-	auto ExpansionPort = 'H';
-	auto ExpansionIntakePort = 'G';
-	auto ExpansionHook = 'F';
-	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionPort, LOW);
-	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+	
+	auto ExpansionPort1 = 'D';
+	auto ExpansionPort2 = 'E';
+	auto ExpansionIntakePort1 = 'G';
+	auto ExpansionIntakePort2 = 'H';
+	auto ExpansionHook = 'A';
+	double POS = 0;
+	int angle;
+
+	pros::Rotation rotation_sensor(rotationPort);
+
+
+	pros::c::adi_pin_mode(ExpansionPort1, OUTPUT);
+	pros::c::adi_digital_write(ExpansionPort1, LOW);
+	pros::c::adi_pin_mode(ExpansionPort2, OUTPUT);
+	pros::c::adi_digital_write(ExpansionPort2, LOW);
+
+	pros::c::adi_pin_mode(ExpansionIntakePort1, OUTPUT);
+	pros::c::adi_digital_write(ExpansionIntakePort1, LOW);
+	pros::c::adi_pin_mode(ExpansionIntakePort2, OUTPUT);
+	pros::c::adi_digital_write(ExpansionIntakePort2, LOW);
+
 	pros::c::adi_pin_mode(ExpansionHook, OUTPUT);
 	pros::c::adi_digital_write(ExpansionHook, LOW);
+
+	if(selector::auton == 1)
+	{
+		 //run auton for Near Red 
+		pros::c::adi_digital_write(ExpansionHook, HIGH);
+		pros::delay(100);
+		driveTrain(-250);
+		turn(45);
+		turn(-90);
+		driveTrain(1200);
+		driveTrain(-500);
+		driveTrain(500);
+		driveTrain(-500);
+		driveTrain(500);
+		
+
+	}
+
+	if(selector::auton == 2)
+	{
+		 //run auton for Far Red 
+		driveTrain(750);
+		pros::c::adi_digital_write(ExpansionHook, HIGH);
+		pros::delay(100);
+		driveTrain(-500);
+		pros::delay(100);
+		pros::c::adi_digital_write(ExpansionHook, LOW);
+		driveTrain(1000);
+		turn(45);
+		driveTrain(1425);
+		driveTrain(-500);
+		driveTrain(500);
+		driveTrain(-500);
+	}
+
+	if(selector::auton == 3)
+	{
+		 //do nothing 
+	}
+
+	if(selector::auton == -1)
+	{
+		 //run auton for Near Blue
+		pros::c::adi_digital_write(ExpansionHook, HIGH);
+		pros::delay(100);
+		driveTrain(-250);
+		turn(45);
+		turn(-90);
+		driveTrain(1200);
+		driveTrain(-500);
+		driveTrain(500);
+		driveTrain(-500);
+		driveTrain(500);
+		
+	}
+
+	if(selector::auton == -2)
+	{
+		 //run auton for Far Blue
+		driveTrain(750);
+		pros::c::adi_digital_write(ExpansionHook, HIGH);
+		pros::delay(100);
+		driveTrain(-750);
+		pros::delay(100);
+		pros::c::adi_digital_write(ExpansionHook, LOW);
+		driveTrain(1000);
+		turn(45);
+		driveTrain(1425);
+		driveTrain(-500);
+		driveTrain(500);
+		driveTrain(-500);
+	}
+
+	if(selector::auton == -3)
+	{
+		 //do nothing
+	}
+
+	if(selector::auton == 0)
+	{
+		 //skills
+		while(true)
+		{
+			angle = rotation_sensor.get_angle();
+			if(angle > (ShootPos))
+			{
+				pros::delay(250);
+			}
+			launchN.move_velocity(150);
+			launchP.move_velocity(150);
+			pros::delay(5);
+		}
+	}
 	
-	//1500? ticks = one block
+	//driveTrain(1425);//oneblock
+
+
+
 	/*pros::c::adi_digital_write(ExpansionHook, HIGH);
 	turn(-90);
 	pros::c::adi_digital_write(ExpansionHook, LOW);
@@ -253,7 +370,7 @@ void autonomous()
 	//shut down all motors
 	driveR_train.move_voltage(0);
 	driveL_train.move_voltage(0);
-	pros::c::adi_digital_write(ExpansionPort, LOW);
+	
 }
 
 /**
@@ -275,14 +392,23 @@ void opcontrol()
 
 	driveL_train.set_reversed(false);
 	
-	auto ExpansionPort = 'H';
-	auto ExpansionIntakePort = 'G';
-	auto ExpansionHook = 'F';
+	auto ExpansionPort1 = 'D';
+	auto ExpansionPort2 = 'E';
+	auto ExpansionIntakePort1 = 'G';
+	auto ExpansionIntakePort2 = 'H';
+	auto ExpansionHook = 'A';
+	double POS = 0;
 
-	pros::c::adi_pin_mode(ExpansionPort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionPort, LOW);
-	pros::c::adi_pin_mode(ExpansionIntakePort, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+	pros::c::adi_pin_mode(ExpansionPort1, OUTPUT);
+	pros::c::adi_digital_write(ExpansionPort1, LOW);
+	pros::c::adi_pin_mode(ExpansionPort2, OUTPUT);
+	pros::c::adi_digital_write(ExpansionPort2, LOW);
+
+	pros::c::adi_pin_mode(ExpansionIntakePort1, OUTPUT);
+	pros::c::adi_digital_write(ExpansionIntakePort1, LOW);
+	pros::c::adi_pin_mode(ExpansionIntakePort2, OUTPUT);
+	pros::c::adi_digital_write(ExpansionIntakePort2, LOW);
+
 	pros::c::adi_pin_mode(ExpansionHook, OUTPUT);
 	pros::c::adi_digital_write(ExpansionHook, LOW);
 
@@ -295,6 +421,7 @@ void opcontrol()
 	bool extend = false;
 	bool extendIntake = false;
 	bool extendClimb = false;
+	bool extendHook = false;
 
 	bool climbPos = false;
 
@@ -310,10 +437,10 @@ void opcontrol()
 	while(true)
 	{
 
-
+		//printf("POS=%.2F \n", getPos());
 		/*USE TO CALIBRATE TURN SENSOR FOR LAUNCHER*/
-		/*
-		rotation_sensor.get_angle();
+		
+		/*rotation_sensor.get_angle();
 		int angle = rotation_sensor.get_angle();
 		if(angle > maxAngle)
 		{
@@ -324,8 +451,8 @@ void opcontrol()
 		{
 			minAngle = angle;
 		}
-		printf("MaxAngle=%d; MinAngle=%d; currentAngle=%d \r\n", maxAngle, minAngle, angle);
-		*/
+		printf("MaxAngle=%d; MinAngle=%d; currentAngle=%d \r\n", maxAngle, minAngle, angle);*/
+		
 
 		/*TANK CONTROL*/
 		/*
@@ -344,18 +471,38 @@ void opcontrol()
 		driveL_train.move(left);
 		driveR_train.move(right);
 		
+		//upwing
+		/*if (master.get_digital_new_press(DIGITAL_R2))
+		{
+			if(extendHook == true)
+			{
+				pros::c::adi_digital_write(ExpansionHook, LOW);
+				extendHook = false;
+
+			}
+			else
+			{
+				pros::c::adi_digital_write(ExpansionHook, HIGH);
+				extendHook = true;
+		
+			}
+			printf("Digital_R2 Pnuematic, ExtendHook=%d \n", extendHook);
+		}*/
+			
 		
 		//wing pneumatics (OPEN/CLOSE)
 		if (master.get_digital_new_press(DIGITAL_L1))
 		{
 			if (extend == true)
 			{
-				pros::c::adi_digital_write(ExpansionPort, LOW);
+				pros::c::adi_digital_write(ExpansionPort1, LOW);
+				pros::c::adi_digital_write(ExpansionPort2, LOW);
 				extend = false;
 			}
 			else
 			{
-				pros::c::adi_digital_write(ExpansionPort, HIGH);
+				pros::c::adi_digital_write(ExpansionPort1, HIGH);
+				pros::c::adi_digital_write(ExpansionPort2, HIGH);
 				extend = true;
 			}
 		
@@ -366,13 +513,18 @@ void opcontrol()
 		if (master.get_digital_new_press(DIGITAL_R1))
 		{	
 
-			launchN.move_relative(200, 150);
-			launchP.move_relative(200, 150);
+			launchN.move_relative(500, 150);
+			launchP.move_relative(500, 150);
 			pros::delay(200);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
 			angle = rotation_sensor.get_angle();
 
 			while(angle < (ShootPos))
 			{	
+
+				if(angle > (ShootPos))
+				{
+					break;
+				}
 				angle = rotation_sensor.get_angle();
 				launchN.move_velocity(300);
 				launchP.move_velocity(300);
@@ -437,7 +589,8 @@ void opcontrol()
 
 			if (extendIntake == true)
 			{
-				pros::c::adi_digital_write(ExpansionIntakePort, LOW);
+				pros::c::adi_digital_write(ExpansionIntakePort1, LOW);
+				pros::c::adi_digital_write(ExpansionIntakePort2, LOW);
 
 				intake.move_velocity(0);
 
@@ -445,7 +598,8 @@ void opcontrol()
 			}
 			else
 			{
-				pros::c::adi_digital_write(ExpansionIntakePort, HIGH);
+				pros::c::adi_digital_write(ExpansionIntakePort1, HIGH);
+				pros::c::adi_digital_write(ExpansionIntakePort2, HIGH);
 
 				extendIntake = true;
 			}
@@ -515,6 +669,7 @@ void opcontrol()
 			}
 
 		}*/
+			
 		
 		count = 0;
 		pros::delay(10);
