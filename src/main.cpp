@@ -71,13 +71,16 @@ void driveTrain(int distance)
 	int errorTerm = 100000;
 	int errorTotal = 0;
 	int sign;
+	int count = 0;
 
 	sign = (distance < 0) ? -1 : 1;
 	
 	errorTerm = distance + startPos - getPos();
 
-	while (errorTerm > 1 or errorTerm < -1)
+	while (errorTerm > 1 or errorTerm < -1 and count <= 2000)
 	{
+
+
 		errorTerm = distance + startPos - getPos();
 
 		int Pos = getPos();
@@ -101,6 +104,7 @@ void driveTrain(int distance)
 
 		lastError = errorTerm;
 		pros::delay(20);
+		count =+ 20;
 	}
 	driveL_train.move_voltage(0);
 	driveR_train.move_voltage(0);
@@ -115,6 +119,7 @@ void turn(int angle)
 	driveL_train.set_reversed(false);
 	double CircleTicks = 2750;
 	int turnTicks = (CircleTicks/360) * angle;
+	int count = 0;
 
 
 
@@ -135,8 +140,10 @@ void turn(int angle)
 	sign = (sign < 0) ? -1 : 1;
 
 	printf("start\n");
-	while (errorTerm > 1 or errorTerm < -1)
+	while (errorTerm > 1 or errorTerm < -1 and count <= 2000)
 	{
+
+
 		errorTerm = (turnTicks + startPos) - floor(getPos());
 
 		sign = (errorTerm < 0) ? -1 : 1;
@@ -162,6 +169,7 @@ void turn(int angle)
 
 		lastError = errorTerm;
 		pros::delay(10);
+		count += 10;
 	}
 	driveL_train.move_voltage(0);
 	driveR_train.move_voltage(0);
@@ -266,12 +274,12 @@ void autonomous()
 		driveTrain(750);
 		pros::c::adi_digital_write(ExpansionHook, HIGH);
 		pros::delay(100);
-		driveTrain(-500);
+		driveTrain(-750);
 		pros::delay(100);
 		pros::c::adi_digital_write(ExpansionHook, LOW);
-		driveTrain(1000);
+		driveTrain(750);
 		turn(45);
-		driveTrain(1425);
+		driveTrain(1200);
 		driveTrain(-500);
 		driveTrain(500);
 		driveTrain(-500);
@@ -307,9 +315,9 @@ void autonomous()
 		driveTrain(-750);
 		pros::delay(100);
 		pros::c::adi_digital_write(ExpansionHook, LOW);
-		driveTrain(1000);
+		driveTrain(750);
 		turn(45);
-		driveTrain(1425);
+		driveTrain(1200);
 		driveTrain(-500);
 		driveTrain(500);
 		driveTrain(-500);
@@ -337,35 +345,6 @@ void autonomous()
 	}
 	
 	//driveTrain(1425);//oneblock
-
-
-
-	/*pros::c::adi_digital_write(ExpansionHook, HIGH);
-	turn(-90);
-	pros::c::adi_digital_write(ExpansionHook, LOW);
-	turn(90);
-	driveTrain(1500);
-	turn(-45);
-	driveTrain(1300);
-	driveTrain(300);
-	turn(90);
-	driveTrain(4500);
-	pros::c::adi_digital_write(ExpansionHook, HIGH);*/
-
-
-	/*
-	
-	//1500? ticks = one block
-	pros::c::adi_digital_write(ExpansionHook, HIGH);
-	driveTrain(500);
-	driveTrain(-500);
-	pros::c::adi_digital_write(ExpansionHook, LOW);
-	turn(225); // tweak
-	pros::c::adi_digital_write(ExpansionPort, HIGH);
-	driveTrain(1600);
-	turn(90);
-	driveTrain(1300);
-	*/
 
 	//shut down all motors
 	driveR_train.move_voltage(0);
@@ -416,14 +395,8 @@ void opcontrol()
 
 	pros::Controller master(CONTROLLER_MASTER);
 
-
-	bool intakeState = false;
 	bool extend = false;
-	bool extendIntake = false;
-	bool extendClimb = false;
 	bool extendHook = false;
-
-	bool climbPos = false;
 
 	int dead_Zone = 10;
 	int count = 0;
@@ -471,8 +444,8 @@ void opcontrol()
 		driveL_train.move(left);
 		driveR_train.move(right);
 		
-		//upwing
-		/*if (master.get_digital_new_press(DIGITAL_R2))
+		//Hook
+		if (master.get_digital_new_press(DIGITAL_L2))
 		{
 			if(extendHook == true)
 			{
@@ -487,7 +460,7 @@ void opcontrol()
 		
 			}
 			printf("Digital_R2 Pnuematic, ExtendHook=%d \n", extendHook);
-		}*/
+		}
 			
 		
 		//wing pneumatics (OPEN/CLOSE)
@@ -539,75 +512,6 @@ void opcontrol()
 
 		}
 
-		//intake, expell ball (NEGATIVE)
-		if (master.get_digital_new_press(DIGITAL_A))
-		{	
-			if (intakeState == false)
-			{
-				intake.move_velocity(-200);
-
-				intakeState = true;
-
-				printf("intakeState = true");
-			}
-			else
-			{
-				intake.move_velocity(0);
-
-				intakeState = false;
-
-				printf("intakeState = false");
-			}
-		}
-
-		//intake, collect ball (POSITIVE)
-		if (master.get_digital_new_press(DIGITAL_Y))
-		{	
-			if (intakeState == false)
-			{
-				intake.move_velocity(200);
-
-				intakeState = true;
-
-				printf("intakeState = true");
-			}
-			else
-			{
-				intake.move_velocity(0);
-
-				intakeState = false;
-
-				printf("intakeState = false");
-			}
-		
-			printf("Digital_Y intake intakeState=%d \n", intakeState);
-		}
-
-		//intake pneumatics (UP/DOWN)
-		if (master.get_digital_new_press(DIGITAL_X))
-		{
-
-			if (extendIntake == true)
-			{
-				pros::c::adi_digital_write(ExpansionIntakePort1, LOW);
-				pros::c::adi_digital_write(ExpansionIntakePort2, LOW);
-
-				intake.move_velocity(0);
-
-				extendIntake = false;
-			}
-			else
-			{
-				pros::c::adi_digital_write(ExpansionIntakePort1, HIGH);
-				pros::c::adi_digital_write(ExpansionIntakePort2, HIGH);
-
-				extendIntake = true;
-			}
-		
-			printf("Digital_X Pnuematic Intake, Extend=%d \n", extend);
-
-		}
-
 		//launcher, move 100 ticks
 		if (master.get_digital_new_press(DIGITAL_RIGHT))
 		{
@@ -621,58 +525,9 @@ void opcontrol()
 			launchN.move_relative(500, 100);
 			launchP.move_relative(500, 100);
 		}
-
-		//climb mech pneumatics (OPEN)
-		/*if(master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
-		{	
-			printf("count = 500 \n");
-
-			if(climbPos == false)
-			{
-				pros::c::adi_digital_write(ExpansionClimbPort, HIGH);
-				climbPos = true;
-			}
-			else
-			{
-				pros::c::adi_digital_write(ExpansionClimbPort, LOW);
-				climbPos = false;
-			}
-		}
-
-		//climbing mech pulley, pull string (POSITIVE) 
-		if(master.get_digital_new_press(DIGITAL_UP) and climbPos)
-		{
-			if(climb.get_target_velocity() != 0)
-			{
-				climb.move_velocity(0);
-				printf("climbmotor 0 \n");
-			}
-			else
-			{
-				climb.move_velocity(150);
-				printf("climbmotor positive \n");
-			}
-		}
-
-		//climbing mech pulley, loosen string (NEGATIVE)
-		if(master.get_digital_new_press(DIGITAL_DOWN) and climbPos)
-		{	
-			if(climb.get_target_velocity() != 0)
-			{
-				climb.move_velocity(0);
-				printf("climbmotor 0 \n");
-			}
-			else
-			{
-				climb.move_velocity(-150);
-				printf("climbmotor negative \n");
-			}
-
-		}*/
-			
 		
 		count = 0;
-		pros::delay(10);
+		pros::delay(5);
 		
 	
 	}
