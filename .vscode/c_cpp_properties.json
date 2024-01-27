@@ -15,8 +15,8 @@
         "_UNICODE"
       ],
       "compilerPath": "/home/sasha/.config/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-linux/bin/arm-none-eabi-g++",
-      "cStandard": "c17",
-      "cppStandard": "c++17",
+      "cStandard": "gnu11",
+      "cppStandard": "gnu++20",
       "intelliSenseMode": "gcc-arm",
       "compileCommands": "/home/sasha/Code/VexTeam_2023-2024-1/compile_commands.json",
       "browse": {

@@ -14,10 +14,11 @@ pros::Motor left_back(1);//
 pros::Motor right_back(11);
 pros::Motor_Group driveL_train({left_front, left_back});
 pros::Motor_Group driveR_train({right_front, right_back});
+pros::IMU Inertial_Sensor(2);
 int rotationPort = 12;
 int maxAngle = -10;
 int minAngle = 1000000000;
-int ShootPos = 8500;
+int ShootPos = 8600;
 int UpPos = 2153;
 
 
@@ -60,7 +61,7 @@ void driveTrain(int distance)
 	driveL_train.set_reversed(true);
 	int startPos = getPos();
 	double kp = 13.00;
-	double ki = 0.2;
+	double ki = 1.0;
 	double kd = -8.50;   /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output PS 
 						*/
@@ -79,7 +80,11 @@ void driveTrain(int distance)
 
 	while (errorTerm > 1 or errorTerm < -1 and count <= 2000)
 	{
-
+		if(count > 2000)
+		{
+			break;
+			printf("TIMEOUT \n");
+		}
 
 		errorTerm = distance + startPos - getPos();
 
@@ -90,7 +95,7 @@ void driveTrain(int distance)
 		sign = (errorTerm < 0) ? -1 : 1;
 
 
-		errorTotal = (errorTotal > 50 / ki) ? 50 / ki : errorTotal;
+		errorTotal = (errorTotal > 500 / ki) ? 500 / ki : errorTotal;
 
 		P = errorTerm * kp;
 		//I = errorTotal * ki;
@@ -104,7 +109,7 @@ void driveTrain(int distance)
 
 		lastError = errorTerm;
 		pros::delay(20);
-		count =+ 20;
+		count += 20;
 	}
 	driveL_train.move_voltage(0);
 	driveR_train.move_voltage(0);
@@ -125,7 +130,7 @@ void turn(int angle)
 
 	int startPos = getPos();
 	double kp = 11.0;
-	double ki = 0.2;
+	double ki = 0.1;
 	double kd = -5.50; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
 						*/
@@ -139,10 +144,18 @@ void turn(int angle)
 
 	sign = (sign < 0) ? -1 : 1;
 
+	errorTerm = (turnTicks + startPos) - floor(getPos());
+
+
 	printf("start\n");
 	while (errorTerm > 1 or errorTerm < -1 and count <= 2000)
 	{
 
+		if(count > 2000)
+		{
+			break;
+			printf("TIMEOUT \n");
+		}
 
 		errorTerm = (turnTicks + startPos) - floor(getPos());
 
@@ -152,16 +165,16 @@ void turn(int angle)
 
 		errorTotal = errorTotal + errorTerm;
 
-		errorTotal = (errorTotal > 50 / ki) ? 50 / ki : errorTotal;
+		errorTotal = (errorTotal > 500 / ki) ? 500 / ki : errorTotal;
 
 
 		P = errorTerm * kp;
 		I = errorTotal * ki;
 		D = (lastError - errorTerm) * kd;
-		int output = (((P + I + D)) + (1250 * sign));
+		int output = (((P + D)) + (1250 * sign));
 
 
-		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d turn=%d \n", errorTerm, P, D, startPos, pos, output, turnTicks);
+		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d turn=%d count=%d \n", errorTerm, P, D, startPos, pos, output, turnTicks, count);
 
 
 		driveL_train.move_voltage(output);
@@ -180,6 +193,23 @@ void turn(int angle)
 
 	return;
 }
+
+void AbsoluteGyroTurn(int angle)
+{
+	driveL_train.set_reversed(false);
+	int count = 0;
+	int heading = Inertial_Sensor.get_heading();
+
+	while(angle != heading)
+	{
+		driveL_train.move_velocity(50);
+		driveR_train.move_velocity(50);
+		heading = Inertial_Sensor.get_heading();
+	}
+
+	return;
+}
+
 
 void on_center_button() {}
 
@@ -329,19 +359,44 @@ void autonomous()
 	}
 
 	if(selector::auton == 0)
-	{
+	{	
+		int shoot = 0;
 		 //skills
-		while(true)
-		{
-			angle = rotation_sensor.get_angle();
-			if(angle > (ShootPos))
-			{
-				pros::delay(250);
-			}
-			launchN.move_velocity(150);
-			launchP.move_velocity(150);
-			pros::delay(5);
-		}
+		driveTrain(-1400);
+		pros::delay(25);
+		turn(-90);
+		pros::delay(25);
+		driveTrain(-1400);
+		pros::delay(25);
+
+		launchN.move_velocity(300);
+		launchP.move_velocity(300);
+		angle = rotation_sensor.get_angle();
+
+		pros::delay(23000);
+	
+		launchN.move_velocity(0);
+		launchP.move_velocity(0);
+		pros::delay(25);
+		driveTrain(1425 * 4.5);
+		pros::delay(25);
+		turn(-90);
+		pros::delay(25);
+		driveTrain(1425);
+		pros::delay(25);
+		turn(90);
+		pros::delay(25);
+		pros::c::adi_digital_write(ExpansionPort1, HIGH);
+		pros::delay(25);
+		driveTrain(1425 * 1.5);
+		pros::delay(25);
+		driveTrain(-1000);
+		pros::delay(25);
+		driveTrain(1000);
+		pros::delay(25);
+		driveTrain(-1000);
+		pros::delay(25);
+
 	}
 	
 	//driveTrain(1425);//oneblock
@@ -402,6 +457,7 @@ void opcontrol()
 	int count = 0;
 	int left;
 	int right;
+	bool shootState = false;
 
 	int angle = rotation_sensor.get_angle();
 	
@@ -444,6 +500,25 @@ void opcontrol()
 		driveL_train.move(left);
 		driveR_train.move(right);
 		
+
+		if(master.get_digital_new_press(DIGITAL_R2))
+		{
+			if(shootState == false)
+			{
+				launchN.move_velocity(300);
+				launchP.move_velocity(300);
+				shootState = true;
+			}
+			else
+			{
+				launchN.move_velocity(0);
+				launchP.move_velocity(0);
+				shootState = false;
+			}
+
+		}
+
+
 		//Hook
 		if (master.get_digital_new_press(DIGITAL_L2))
 		{
@@ -486,9 +561,9 @@ void opcontrol()
 		if (master.get_digital_new_press(DIGITAL_R1))
 		{	
 
-			launchN.move_relative(500, 150);
-			launchP.move_relative(500, 150);
-			pros::delay(200);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
+			launchN.move_relative(100, 100);
+			launchP.move_relative(100, 100);
+			pros::delay(50);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
 			angle = rotation_sensor.get_angle();
 
 			while(angle < (ShootPos))
@@ -503,7 +578,7 @@ void opcontrol()
 				launchP.move_velocity(300);
 				
 				printf("angle=%d \n", angle);
-				pros::delay(5);
+				pros::delay(1);
 			}
 			launchN.move_velocity(0);
 			launchP.move_velocity(0);
