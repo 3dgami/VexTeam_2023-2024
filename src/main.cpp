@@ -1,6 +1,7 @@
 #include "main.h"
 #include "selection.h"
 #include "selection.ccp"
+#include "okapi/api.hpp"
 
 //update all motor ports if needed
 pros::Controller master{CONTROLLER_MASTER};	
@@ -15,7 +16,7 @@ pros::Motor right_back(11);
 pros::Motor_Group driveL_train({left_front, left_back});
 pros::Motor_Group driveR_train({right_front, right_back});
 pros::IMU Inertial_Sensor(2);
-int rotationPort = 12;
+int rotationPort = 19;
 int maxAngle = -10;
 int minAngle = 1000000000;
 int ShootPos = 8600;
@@ -194,7 +195,8 @@ void turn(int angle)
 	return;
 }
 
-void SideTurn(int side, int angle)
+
+void Centralturn(int angle, bool side)
 {
 	driveL_train.set_reversed(false);
 	double CircleTicks = 2750;
@@ -203,8 +205,8 @@ void SideTurn(int side, int angle)
 
 
 
-	int startPos = getPos();
-	double kp = 25.0;
+	int startPos = (side = 1) ? getRightPos() : getLeftPos();
+	double kp = 9.0;
 	double ki = 0.1;
 	double kd = -5.50; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
@@ -216,10 +218,11 @@ void SideTurn(int side, int angle)
 	int errorTerm;
 	int errorTotal = 0;
 	int sign = 1;
+	bool Pos = (side = 1) ? getRightPos() : getLeftPos();
 
 	sign = (sign < 0) ? -1 : 1;
 
-	errorTerm = (turnTicks + startPos) - floor(getPos());
+	errorTerm = (turnTicks + startPos) - floor(Pos);
 
 
 	printf("start\n");
@@ -232,11 +235,11 @@ void SideTurn(int side, int angle)
 			printf("TIMEOUT \n");
 		}
 
-		errorTerm = (turnTicks + startPos) - floor(getPos());
+		Pos = (side = 1) ? getRightPos() : getLeftPos();
+
+		errorTerm = (turnTicks + startPos) - floor(Pos);
 
 		sign = (errorTerm < 0) ? -1 : 1;
-
-		int pos = getPos();
 
 		errorTotal = errorTotal + errorTerm;
 
@@ -249,15 +252,16 @@ void SideTurn(int side, int angle)
 		int output = (((P + D)) + (1250 * sign));
 
 
-		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d turn=%d count=%d \n", errorTerm, P, D, startPos, pos, output, turnTicks, count);
+		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d turn=%d count=%d \n", errorTerm, P, D, startPos, Pos, output, turnTicks, count);
 
-		if( side == 1)
+
+		if(side = 1)
 		{
 			driveR_train.move_voltage(output);
 		}
 		else
 		{
-		driveL_train.move_voltage(output);
+			driveL_train.move_voltage(output);
 		}
 
 		lastError = errorTerm;
@@ -274,30 +278,9 @@ void SideTurn(int side, int angle)
 	return;
 }
 
-
-void GyroTurn(double angle)
+void MoveTurn(int ticks, int angle, int powerdifference)
 {
-	driveL_train.set_reversed(false);
-	int count = 0;
-	auto heading = Inertial_Sensor.get_rotation();
-	auto target = heading + angle;
-	printf("heading = %0.2f, target=%0.2f \n", heading, target);
-
-	driveL_train.move_velocity(50);
-	driveR_train.move_velocity(50);
-	while(fabs(target - heading) > 0.5)
-	{
-		heading = Inertial_Sensor.get_rotation();
-		printf("heading = %0.2f, %.2f \n", heading, Inertial_Sensor.get_rotation());
-		pros::delay(10);
-	}
-
-	driveL_train.move_velocity(0);
-	driveR_train.move_velocity(0);
-	printf("end, err=%0.2f \n", fabs(target - heading));
-	return;
 }
-
 
 void on_center_button() {}
 
@@ -428,34 +411,12 @@ void autonomous()
 	if(selector::auton == -1)
 	{
 		 //run auton for Near Blue
-		pros::c::adi_digital_write(ExpansionHook, HIGH);
-		pros::delay(100);
-		driveTrain(-250);
-		turn(45);
-		turn(-90);
-		driveTrain(1200);
-		driveTrain(-500);
-		driveTrain(500);
-		driveTrain(-500);
-		driveTrain(500);
 		
 	}
 
 	if(selector::auton == -2)
 	{
 		 //run auton for Far Blue
-		driveTrain(750);
-		pros::c::adi_digital_write(ExpansionHook, HIGH);
-		pros::delay(100);
-		driveTrain(-750);
-		pros::delay(100);
-		pros::c::adi_digital_write(ExpansionHook, LOW);
-		driveTrain(750);
-		turn(45);
-		driveTrain(1200);
-		driveTrain(-500);
-		driveTrain(500);
-		driveTrain(-500);
 	}
 
 	if(selector::auton == -3)
@@ -463,50 +424,59 @@ void autonomous()
 		 //do nothing
 	} */
 
-	
-		int shoot = 0;
+
 		 //skills
-		/*driveTrain(1200);
+		driveTrain(1000);
+		pros::delay(1000);
+
 		pros::delay(25);
-		turn(65);
+		turn(70);
+		pros::delay(1000);
 		pros::delay(25);
-		driveTrain(-1000);
+		driveTrain(-1200);
+		pros::delay(1000);
 		pros::delay(25);
 
-		driveL_train.move_voltage(1000);
-		driveR_train.move_voltage(-1000);
+		/*driveL_train.move_voltage(3000);
+		driveR_train.move_voltage(-3000);
 
-		launchN.move_velocity(300);
-		launchP.move_velocity(300);
+		launchN.move_velocity(500);
+		launchP.move_velocity(500);*/
 		angle = rotation_sensor.get_angle();
 
-		pros::delay(1000);
+		pros::delay(7000);
 	
-		launchN.move_velocity(0);
-		launchP.move_velocity(0);
+		/*launchN.move_velocity(0);
+		launchP.move_velocity(0);*/
 		driveL_train.move_voltage(0);
-		driveR_train.move_voltage(0);*/
+		driveR_train.move_voltage(0);
+
+		pros::delay(2000);
+
 
 		Movement moves[] = 
 		{	
-			Movement(10, 75, 800),
-			Movement(75, 75, 1350),
-			Movement(75, 10, 550),
-			Movement(75, 75, 3500),
-			Movement(10, 75, 800),
-			Movement(75, 75, 1350),
+			Movement(750, 7500, 1000), 	//10,90
+			Movement(7500, 7500, 0), 	
+			Movement(8000, 750, 550), 		
+			Movement(7500, 7500, 2000), 	
+			Movement(7500, 750, 800), 			
+			//Movement(75, 75, 1350),
 		};
 	
 		//SideTurn(1, 70);
 		int stepCount = sizeof(moves)/sizeof(Movement);
-		for(int i = 0;i<stepCount;i++)
+		for(int i = 0; i<stepCount; i++)
 		{
 			printf("i=%d, sizeof%d \n", i,stepCount);
-			driveL_train.move_velocity(-1*moves[i].left);
-			driveR_train.move_velocity(moves[i].right);
+			driveL_train.move_voltage(-1*moves[i].left);
+			driveR_train.move_voltage(moves[i].right);
 			pros::delay(moves[i].delay);
+			driveL_train.move_voltage(0);
+			driveR_train.move_voltage(0);
+			pros::delay(1000);
 		}
-
+		
 	//}
 	
 	//driveTrain(1425);//oneblock
