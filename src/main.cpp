@@ -531,6 +531,81 @@ void gyroTurn(int angle)
 	return;
 }
 
+void AbsgyroTurn(int angle)
+{
+	printf("start \n");
+	driveL_train.set_reversed(true);
+	driveR_train.set_reversed(true);
+
+	double heading = Inertial_Sensor.get_heading();
+	//double target = heading + angle;
+
+	double kp = 55.0;
+	double ki = 0.1;
+	double kd = -6.50; /*derivitive should control and stop overshooting this can be done
+						  by having kd be negative or having a (P + I - D) for the output
+						*/
+	double P;
+	double I;
+	double D;
+	int lastError = 0;
+	int errorTerm;
+	int errorTotal = 0;
+	int sign = 1; 
+	int count = 0;
+	double negativeHeading;
+
+	sign = (heading > (180 + angle)) ? 1 : -1;
+
+	errorTerm = (heading > (180 + angle)) ? (360 - angle) + heading : heading - angle;
+
+	printf("start\n");
+	while (errorTerm > 1 or errorTerm < -1 and count <= 2000) 
+	{
+
+		if(count > 2000)
+		{
+			break;
+			printf("TIMEOUT \n");
+		}
+
+		heading = Inertial_Sensor.get_heading();
+		errorTerm = (heading > (180 + angle)) ? (360 - angle) + heading : heading - angle;
+
+		sign = (heading > (180 + angle)) ? 1 : -1;
+
+		errorTotal = errorTotal + errorTerm;
+
+		errorTotal = (errorTotal > 500 / ki) ? 500 / ki : errorTotal;
+
+
+		P = errorTerm * kp;
+		I = errorTotal * ki;
+		D = (lastError - errorTerm) * kd;
+		int output = (((P + D)) + (1250 * sign));
+
+
+		printf("err=%d, P=%.02f, D=%.02f, O=%d, heading=%0.2f count=%d \n", errorTerm, P, D, output, heading, count);
+
+
+		driveL_train.move_voltage(output);
+		driveR_train.move_voltage(output);
+
+		lastError = errorTerm;
+		pros::delay(10);
+		count += 10;
+	}
+	driveL_train.move_voltage(0);
+	driveR_train.move_voltage(0);
+	driveL_train.set_reversed(true);
+	driveR_train.set_reversed(false);
+
+	pros::delay(100);
+	printf("Heading=%0.2f \n", Inertial_Sensor.get_heading());
+
+	return;
+}
+
 void gyroSturn(int distance, int angle, int time)
 {
 	
@@ -587,7 +662,7 @@ void autonomous()
 	auto ExpansionIntakePort1 = 'G';
 	auto ExpansionIntakePort2 = 'H';
 	auto ExpansionHook = 'A';
-	double POS = 0;
+	int count;
 	int angle;
 
 	pros::Rotation rotation_sensor(rotationPort);
@@ -666,27 +741,23 @@ void autonomous()
 	{
 		 //skills
 		driveTrain(1000);
-		//pros::delay(1000);
-
-		pros::delay(25);
-		turn(70);
-		//pros::delay(1000);
-		pros::delay(25);
+		gyroTurn(70); //used to be 'turn(70)'
 		driveTrain(-1000);
-		//pros::delay(1000);
 		pros::delay(25);
 
-		/*driveL_train.move_voltage(3000);
+		driveL_train.move_voltage(3000);
 		driveR_train.move_voltage(-3000);
-
-		launchN.move_velocity(500);
-		launchP.move_velocity(500);*/
-		angle = rotation_sensor.get_angle();
-
-		//pros::delay(7000);
+		while(count < 45)
+		{
+			launchN.move_velocity(300);
+			launchP.move_velocity(300);
+			angle = rotation_sensor.get_angle();
+			count = (angle == UpPos) ? count += 1 : count;
+			pros::delay(10);
+		}
 	
-		/*launchN.move_velocity(0);
-		launchP.move_velocity(0);*/
+		launchN.move_velocity(0);
+		launchP.move_velocity(0);
 		driveL_train.move_voltage(0);
 		driveR_train.move_voltage(0);
 
@@ -726,14 +797,15 @@ void autonomous()
 
 
 		}
-
+		
 		driveTrain(1500);
 		driveTrain(-1200);
-		turn(-90);
+		pros::c::adi_digital_write(ExpansionPort1, LOW);
+		gyroTurn(-90); //used to be turn(-90)
 		driveTrain(1000);
-		turn(45);
+		gyroTurn(45); // used to be turn(45)
 		driveTrain(2500);
-		turn(135);
+		gyroSturn(135); // used to be turn(135)
 		pros::c::adi_digital_write(ExpansionPort1, HIGH);
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
 		driveTrain(2000);
@@ -744,9 +816,9 @@ void autonomous()
 		pros::c::adi_digital_write(ExpansionPort2, LOW);
 
 		driveTrain(-2000);
-		turn(-90);
+		gyroTurn(-90);
 		driveTrain(650);
-		turn(90);
+		gyroTurn(90);
 		
 		pros::c::adi_digital_write(ExpansionPort1, HIGH);
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
