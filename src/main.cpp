@@ -531,7 +531,7 @@ void gyroTurn(int angle)
 	return;
 }
 
-void AbsgyroTurn(int angle)
+void AbsGyroTurn(int angle)
 {
 	printf("start \n");
 	driveL_train.set_reversed(true);
@@ -751,8 +751,6 @@ void autonomous()
 		{
 			launchN.move_velocity(300);
 			launchP.move_velocity(300);
-			angle = rotation_sensor.get_angle();
-			count = (angle == UpPos) ? count += 1 : count;
 			pros::delay(10);
 		}
 	
@@ -805,7 +803,7 @@ void autonomous()
 		driveTrain(1000);
 		gyroTurn(45); // used to be turn(45)
 		driveTrain(2500);
-		gyroSturn(135); // used to be turn(135)
+		gyroTurn(135); // used to be turn(135)
 		pros::c::adi_digital_write(ExpansionPort1, HIGH);
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
 		driveTrain(2000);

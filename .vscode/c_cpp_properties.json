@@ -7,7 +7,8 @@
         "/home/sasha/Code/VexTeam_2023-2024/include",
         "c:\\Users\\sasha\\OneDrive\\Attachments\\Desktop\\VexOwnCode\\VexDrive\\VexPid2\\VexTeam_2023-2024\\include",
         "/home/sasha/VexTeam_2023-2024/include",
-        "/home/sasha/Code/VexTeam_2023-2024-1/include"
+        "/home/sasha/Code/VexTeam_2023-2024-1/include",
+        "/home/sasha/Documents/VexTeam_2023-2024/include"
       ],
       "defines": [
         "_DEBUG",
@@ -18,10 +19,10 @@
       "cStandard": "gnu11",
       "cppStandard": "gnu++20",
       "intelliSenseMode": "gcc-arm",
-      "compileCommands": "/home/sasha/Code/VexTeam_2023-2024-1/compile_commands.json",
+      "compileCommands": "/home/sasha/Documents/VexTeam_2023-2024/compile_commands.json",
       "browse": {
         "path": [
-          "/home/sasha/Code/VexTeam_2023-2024-1"
+          "/home/sasha/Documents/VexTeam_2023-2024"
         ],
         "limitSymbolsToIncludedHeaders": true,
         "databaseFilename": ""
