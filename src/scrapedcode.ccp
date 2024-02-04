@@ -1,4 +1,51 @@
 
+/*void DanielTurn(int distance1, int Turnangle)
+{
+	bool howmuch, distance1, Rpower, acdistr, Turnangle, Lpower, turn, extradistcuzturn, dbw, actdistl, distancer, distancel;
+	dbw = 10.0;
+  	extradistcuzturn = dbw * Turnangle;
+
+	 while (!(acdistr == distance1)) {
+    distancel = distance1 - extradistcuzturn;
+    distancer = distance1 + extradistcuzturn;
+    distance1 = (distancel + distancer) / 2.0;
+    acdistr = getRightPos();
+    actdistl = getLeftPos();
+    // functions below basically make the robot only go distance1.
+    Rpower = -1.0 * ((acdistr - (0.5 * (distancer + extradistcuzturn)) * (0.5 * (distancer + extradistcuzturn))) / (0.5 * (distancer + extradistcuzturn))) + 100.0;
+    Lpower = -1.0 * ((actdistl - (0.5 * (distancel + extradistcuzturn)) * (0.5 * (distancel + extradistcuzturn))) / (0.5 * (distancel + extradistcuzturn))) + 100.0;
+    driveR_train.move_velocity(Rpower);
+    driveL_train.move_velocity(Lpower);
+    
+ 	pros::delay(5000);
+
+  }
+  return;
+}*/
+
+
+void gyroTurn(int angle)
+{
+	printf("start \n");
+	driveL_train.set_reversed(false);
+
+	double heading = Inertial_Sensor.get_heading();
+	//double target = heading + angle;
+
+	while(heading > angle + 0.5 or heading < angle - 0.5)
+	{
+		driveL_train.move_velocity(-25);
+		driveR_train.move_velocity(-25);
+		heading = Inertial_Sensor.get_heading();
+		pros::delay(2);
+		printf("heading=%0.2f \n", heading);
+
+	}
+	driveL_train.move_velocity(0);
+	driveR_train.move_velocity(0);
+	pros::delay(150);
+	printf("done, heading=%0.2f \n", heading);
+}
 
 
 		//intake, expell ball (NEGATIVE)

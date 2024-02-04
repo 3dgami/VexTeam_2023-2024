@@ -1,7 +1,6 @@
 #include "main.h"
 #include "selection.h"
 #include "selection.ccp"
-#include "okapi/api.hpp"
 
 //update all motor ports if needed
 pros::Controller master{CONTROLLER_MASTER};	
@@ -22,6 +21,20 @@ int minAngle = 1000000000;
 int ShootPos = 8600;
 int UpPos = 2153;
 
+struct Movement
+{
+	public:
+	Movement(int l, int r, int d)
+	{
+		left = l;
+		right = r;
+		delay = d;
+	}
+
+	int left;
+	int right;
+    int delay;
+};
 
 void SetDriveRelative(int ticks, int Lspeed, int Rspeed)
 	{
@@ -143,7 +156,7 @@ void turn(int angle)
 	int errorTotal = 0;
 	int sign = 1;
 
-	sign = (sign < 0) ? -1 : 1;
+	sign = (angle > 0) ? 1 : -1;
 
 	errorTerm = (turnTicks + startPos) - floor(getPos());
 
@@ -196,16 +209,15 @@ void turn(int angle)
 }
 
 void Centralturn(int angle, bool side)
-{
-	driveL_train.set_reversed(false);
-	double CircleTicks = 2750;
+{	
+	driveL_train.set_reversed(true);
+	double CircleTicks = 5400;
 	int turnTicks = (CircleTicks/360) * angle;
 	int count = 0;
+	int startPos;
+	double Pos;
 
-
-
-	int startPos = (side = 1) ? getRightPos() : getLeftPos();
-	double kp = 9.0;
+	double kp = 2.0;
 	double ki = 0.1;
 	double kd = -5.50; /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output
@@ -217,28 +229,37 @@ void Centralturn(int angle, bool side)
 	int errorTerm;
 	int errorTotal = 0;
 	int sign = 1;
-	bool Pos = (side = 1) ? getRightPos() : getLeftPos();
 
-	sign = (sign < 0) ? -1 : 1;
-
-	errorTerm = (turnTicks + startPos) - floor(Pos);
+	sign = (angle > 0) ? 1 : -1;
 
 
-	printf("start\n");
-	while (errorTerm > 1 or errorTerm < -1 and count <= 2000)
+	if(side == 1)
 	{
+		startPos = getRightPos();
+	}
+	
+	else if(side == 0)
+	{
+		startPos = getLeftPos();
+	}
+	Pos = (side == 1) ? getRightPos() : getLeftPos();
 
-		if(count > 2000)
+	errorTerm = (turnTicks + startPos) - Pos;
+
+	while(errorTerm > 1 or errorTerm < 1 and count <= 3000)
+	{
+		if(count > 3000)
 		{
 			break;
 			printf("TIMEOUT \n");
 		}
 
-		Pos = (side = 1) ? getRightPos() : getLeftPos();
-
+		Pos = (side == 1) ? getRightPos() : getLeftPos();
 		errorTerm = (turnTicks + startPos) - floor(Pos);
 
 		sign = (errorTerm < 0) ? -1 : 1;
+
+		int pos = getPos();
 
 		errorTotal = errorTotal + errorTerm;
 
@@ -251,25 +272,23 @@ void Centralturn(int angle, bool side)
 		int output = (((P + D)) + (1250 * sign));
 
 
-		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d turn=%d count=%d \n", errorTerm, P, D, startPos, Pos, output, turnTicks, count);
+		printf("step err=%d, P=%.02f, D=%.02f, StartPos=%d, Pos=%d, O=%d turn=%d count=%d \n", errorTerm, P, D, startPos, pos, output, turnTicks, count);
 
-
-		if(side = 1)
+		if(side == 1)
 		{
 			driveR_train.move_voltage(output);
 		}
-		else
+		else if(side == 0)
 		{
 			driveL_train.move_voltage(output);
 		}
-
+		
 		lastError = errorTerm;
 		pros::delay(10);
 		count += 10;
 	}
 	driveL_train.move_voltage(0);
 	driveR_train.move_voltage(0);
-	driveL_train.set_reversed(true);
 
 	pros::delay(10);
 	printf("\nDone err=%d\n, O=%d", errorTerm, turnTicks);
@@ -277,121 +296,55 @@ void Centralturn(int angle, bool side)
 	return;
 }
 
-void driveAndTurn(int distance, int angle)
-{
-    driveL_train.set_reversed(true);
-
-    int startPos = getPos();
-    double kpDrive = 9.00;
-    double kiDrive = 1.0;
-    double kdDrive = -8.50;
-
-    double kpTurn = 9.0;
-    double kiTurn = 0.1;
-    double kdTurn = -5.50;
-
-    double PDrive, IDrive = 0, DDrive;
-    double PTurn, ITurn = 0, DTurn;
-
-    int lastErrorDrive = 0;
-    int errorTermDrive, errorTotalDrive = 0;
-    int lastErrorTurn = 0;
-    int errorTermTurn, errorTotalTurn = 0;
-	int combinedError = (0.8 * errorTermDrive) + (0.2 * errorTermTurn);
-
-    int signDrive, signTurn;
-    int count = 0;
-
-    signDrive = (distance < 0) ? -1 : 1;
-    signTurn = (angle < 0) ? -1 : 1;
-
-    // Calculate the number of ticks for turning
-    double circleTicks = 2750;
-    int turnTicks = (circleTicks / 360) * angle;
-
-    // Loop until both distance and angle are achieved or timeout
-    while (combinedError > 1 and count <= 2000)
-    {
-        if (count > 2000)
-        {
-            printf("TIMEOUT \n");
-            break;
-        }
-
-        // Drive PID calculations
-        errorTermDrive = distance + startPos - getPos();
-        int posDrive = getPos();
-        errorTotalDrive += errorTermDrive;
-        errorTotalDrive = (errorTotalDrive > 500 / kiDrive) ? 500 / kiDrive : errorTotalDrive;
-        PDrive = errorTermDrive * kpDrive;
-        DDrive = (lastErrorDrive - errorTermDrive) * kdDrive;
-        int outputDrive = (((PDrive + IDrive + DDrive) + (1000 * signDrive)));
-
-        // Turn PID calculations
-        errorTermTurn = (turnTicks + startPos) - floor(getPos());
-        int posTurn = getPos();
-        errorTotalTurn += errorTermTurn;
-        errorTotalTurn = (errorTotalTurn > 500 / kiTurn) ? 500 / kiTurn : errorTotalTurn;
-        PTurn = errorTermTurn * kpTurn;
-        ITurn = errorTotalTurn * kiTurn;
-        DTurn = (lastErrorTurn - errorTermTurn) * kdTurn;
-        int outputTurn = (((PTurn + ITurn + DTurn) + (1250 * signTurn)));
-
-        // Combine the errors
-        int combinedError = (0.5 * errorTermDrive) + (0.5 * errorTermTurn);
-
-        // Combine the outputs for driving and turning
-        int finalOutputL = outputDrive - outputTurn;
-        int finalOutputR = outputDrive + outputTurn;
-
-        printf("O_L=%d, O_R=%d, P_D=%0.2f, D_D=%0.2f, P_T=%0.2f, D_T=%0.2f, Pos_D=%d, Pos_T=%d, StartPos=%d, CombinedErr=%d\n",
-               finalOutputL, finalOutputR, PDrive, DDrive, PTurn, DTurn, posDrive, posTurn, startPos, combinedError);
-
-        // Set motor voltages
-        driveL_train.move_voltage(finalOutputL);
-        driveR_train.move_voltage(finalOutputR);
-
-        // Update last errors and wait
-        lastErrorDrive = errorTermDrive;
-        lastErrorTurn = errorTermTurn;
-        pros::delay(20);
-        count += 20;
-    }
-
-    // Stop motors after reaching the desired position
-    driveL_train.move_voltage(0);
-    driveR_train.move_voltage(0);
-    printf("End\nCombinedErr=%d", combinedError);
-    driveL_train.set_reversed(false);
-
-    return;
-}
-
 void RadTurn(double radius, int angle)
 {
-	int wheelRadius = 3;
-	double CenterOffset = 5;
+
+	driveL_train.set_reversed(true);
+	int wheelRadius = 1.5;
+	double CenterOffset = 7.5;
 	
 	double innerRad = abs(radius) - CenterOffset;
 	double outerRad = abs(radius) + CenterOffset;
 
 	double innerCirc = (2 * 3.14) * innerRad;
 	double outerCirc = (2 * 3.14) * outerRad;
-	double wheelCirc = (2 * 3.14) * 3;
+	double wheelCirc = (2 * 3.14) * 1.5;
 
-	double ticksPerOuterCirc = (wheelCirc / outerCirc) * 1350;
-	double ticksPerInnerCirc = (wheelCirc / innerCirc) * 1350; //1350tick per wheel revolution
+	double ticksPerOuterCirc = (outerCirc / wheelCirc) * 1800;
+	double ticksPerInnerCirc = (innerCirc / wheelCirc) * 1800; //1350tick per wheel revolution
 
 	int distanceO = (ticksPerOuterCirc / 360) * angle;
 	int distanceI = (ticksPerInnerCirc / 360) * angle;
 
-	driveL_train.set_reversed(true);
-	int startPos = getPos();
+	int IstartPos;
+	int OstartPos;
+
+	IstartPos = getLeftPos();
+	OstartPos = getRightPos();
+
+	int errorOTerm;
+	int errorITerm;
+
+	errorOTerm = distanceO + OstartPos - getRightPos();
+	errorITerm = distanceI + IstartPos - getLeftPos();
+
+	//driveL_train.set_reversed(true);
+
+	if(angle > 0)
+	{
+		IstartPos = getRightPos();
+		OstartPos = getLeftPos();
+	}
+	else if(angle < 0)
+	{
+		IstartPos = getLeftPos();
+		OstartPos = getRightPos();
+	}
 	double kp = 9.00;
 	double ki = 1.0;
-	double kd = -8.50;   /*derivitive should control and stop overshooting this can be done
-						  by having kd be negative or having a (P + I - D) for the output PS 
-						*/
+	double kd = -7.50;  /* derivitive should control and stop overshooting this can be done
+						  by having kd be negative or having a (P + I - D) for the output PS */
+						
 	double InnerP;
 	double InnerI;
 	double InnerD;
@@ -414,19 +367,38 @@ void RadTurn(double radius, int angle)
 	signI = (distanceI < 0) ? -1 : 1;
 	signO = (distanceO < 0) ? -1 : 1;
 	
-	errorTermI = distanceI + startPos - getPos();
-	errorTermO = distanceO + startPos - getPos();
-
-	while (errorTermI > 1 or errorTermI < -1 and count <= 2000 and errorTermO > 1 or errorTermO < -1)
+	if(angle > 0)
 	{
-		if(count > 2000)
+		errorTermI = distanceI + IstartPos - getRightPos();
+		errorTermO = distanceO + OstartPos - getLeftPos();
+
+	}
+	else if(angle < 0)
+	{
+		errorTermI = distanceI + IstartPos - getLeftPos();
+		errorTermO = distanceO + OstartPos - getRightPos();
+
+	}
+
+	while (errorTermI > 1 or errorTermI < -1 or errorTermO > 1 or errorTermO < -1)//and count <= 2000
+	{
+		/*if(count > 2000)
 		{
 			break;
 			printf("TIMEOUT \n");
-		}
+		}*/
+		
+		if(angle > 0)
+		{
+			errorTermI = distanceI + IstartPos - getRightPos();
+			errorTermO = distanceO + OstartPos - getLeftPos();
 
-		errorTermI = distanceI + startPos - getPos();
-		errorTermO = distanceO + startPos - getPos();
+		}
+		else if(angle < 0)
+		{
+			errorTermI = distanceI + IstartPos - getLeftPos();
+			errorTermO = distanceO + OstartPos - getRightPos();
+		}
 
 		Pos = getPos();
 
@@ -449,8 +421,8 @@ void RadTurn(double radius, int angle)
 		OuterD = (lastErrorO - errorTermO) * kd;
 		int outputO = (((OuterP + OuterI + OuterD) + (1000 * signO)));
 
-		printf("I_O=%D, I_P=%0.2f, I_D=%0.2f, Position=%d, startPos=%d I_Err=%d\n",outputI, InnerP, InnerD, Pos, startPos, errorTermI);
-		printf("O_O=%D, O_P=%0.2f, O_D=%0.2f, Position=%d, startPos=%d O_Err=%d\n",outputO, OuterP, OuterD, Pos, startPos, errorTermO);
+		printf("I_O=%D, I_P=%0.2f, I_D=%0.2f, Position=%d, startPos=%d I_Err=%d\n",outputI, InnerP, InnerD, Pos, IstartPos, errorTermI);
+		printf("O_O=%D, O_P=%0.2f, O_D=%0.2f, Position=%d, startPos=%d O_Err=%d\n",outputO, OuterP, OuterD, Pos, OstartPos, errorTermO);
 
 		if(angle > 0)
 		{
@@ -470,37 +442,99 @@ void RadTurn(double radius, int angle)
 	}
 	driveL_train.move_voltage(0);
 	driveR_train.move_voltage(0);
-	printf("End\nErr_I=%d, Err_O=%d", errorTermI, errorTermO);
+	printf("End Err_I=%d, Err_O=%d \n", errorTermI, errorTermO);
 	driveL_train.set_reversed(false);
 
 	return;
 	
 }
 
-void DanielTurn(int distance1, int Turnangle)
+void gyroTurn(int angle)
 {
-	bool howmuch, distance1, Rpower, acdistr, Turnangle, Lpower, turn, extradistcuzturn, dbw, actdistl, distancer, distancel;
-	dbw = 10.0;
-  	extradistcuzturn = dbw * Turnangle;
+	printf("start \n");
+	driveL_train.set_reversed(true);
+	driveR_train.set_reversed(true);
 
-	 while (!(acdistr == distance1)) {
-    distancel = distance1 - extradistcuzturn;
-    distancer = distance1 + extradistcuzturn;
-    distance1 = (distancel + distancer) / 2.0;
-    acdistr = getRightPos();
-    actdistl = getLeftPos();
-    // functions below basically make the robot only go distance1.
-    Rpower = -1.0 * ((acdistr - (0.5 * (distancer + extradistcuzturn)) * (0.5 * (distancer + extradistcuzturn))) / (0.5 * (distancer + extradistcuzturn))) + 100.0;
-    Lpower = -1.0 * ((actdistl - (0.5 * (distancel + extradistcuzturn)) * (0.5 * (distancel + extradistcuzturn))) / (0.5 * (distancel + extradistcuzturn))) + 100.0;
-    driveR_train.move_velocity(Rpower);
-    driveL_train.move_velocity(Lpower);
-    
- 	pros::delay(5000);
+	double heading = Inertial_Sensor.get_heading();
+	Inertial_Sensor.tare();
+	//double target = heading + angle;
 
-  }
-  return;
+	double kp = 55.0;
+	double ki = 0.1;
+	double kd = -6.50; /*derivitive should control and stop overshooting this can be done
+						  by having kd be negative or having a (P + I - D) for the output
+						*/
+	double P;
+	double I;
+	double D;
+	int lastError = 0;
+	int errorTerm;
+	int errorTotal = 0;
+	int sign = 1; 
+	int count = 0;
+	double negativeHeading;
+
+	sign = (angle > 0) ? 1 : -1;
+
+	errorTerm = abs(angle) - floor(Inertial_Sensor.get_heading());
+
+
+	printf("start\n");
+	while (errorTerm > 1 or errorTerm < -1 and count <= 2000) 
+	{
+
+		if(count > 2000)
+		{
+			break;
+			printf("TIMEOUT \n");
+		}
+
+		heading = Inertial_Sensor.get_heading();
+
+		negativeHeading = (heading > 180) ? abs(heading - 360) : heading;
+		
+		errorTerm = abs(angle) - negativeHeading;
+
+		sign = (errorTerm < 0) ? -1 : 1;
+
+		int pos = getPos();
+
+		errorTotal = errorTotal + errorTerm;
+
+		errorTotal = (errorTotal > 500 / ki) ? 500 / ki : errorTotal;
+
+
+		P = errorTerm * kp;
+		I = errorTotal * ki;
+		D = (lastError - errorTerm) * kd;
+		int output = (((P + D)) + (1250 * sign));
+
+
+		printf("err=%d, P=%.02f, D=%.02f, Pos=%d, O=%d, heading=%0.2f count=%d \n", errorTerm, P, D, pos, output, heading, count);
+
+
+		driveL_train.move_voltage(output);
+		driveR_train.move_voltage(output);
+
+		lastError = errorTerm;
+		pros::delay(10);
+		count += 10;
+	}
+	driveL_train.move_voltage(0);
+	driveR_train.move_voltage(0);
+	driveL_train.set_reversed(true);
+	driveR_train.set_reversed(false);
+
+	pros::delay(10);
+	printf("Heading=%0.2f \n", Inertial_Sensor.get_heading());
+
+	return;
 }
 
+void gyroSturn(int distance, int angle, int time)
+{
+	
+}
 void on_center_button() {}
 
 /**
@@ -533,21 +567,6 @@ void disabled() {}
  */
 void competition_initialize()
 {}
-
-struct Movement
-{
-	public:
-	Movement(int l, int r, int d)
-	{
-		left = l;
-		right = r;
-		delay = d;
-	}
-
-	int left;
-	int right;
-    int delay;
-};
 
 /**
  * Runs the user autonomous code. This function will be started in its own task
@@ -587,8 +606,8 @@ void autonomous()
 	pros::c::adi_pin_mode(ExpansionHook, OUTPUT);
 	pros::c::adi_digital_write(ExpansionHook, LOW);
 
-	/*if(selector::auton == 0)
-	{	if(selector::auton == 1)
+	
+	if(selector::auton == 1)
 	{
 		 //run auton for Near Red 
 		pros::c::adi_digital_write(ExpansionHook, HIGH);
@@ -641,19 +660,20 @@ void autonomous()
 	if(selector::auton == -3)
 	{
 		 //do nothing
-	} */
+	}
 
-
+	if(selector::auton == 0)
+	{
 		 //skills
 		driveTrain(1000);
-		pros::delay(1000);
+		//pros::delay(1000);
 
 		pros::delay(25);
 		turn(70);
-		pros::delay(1000);
+		//pros::delay(1000);
 		pros::delay(25);
-		driveTrain(-1200);
-		pros::delay(1000);
+		driveTrain(-1000);
+		//pros::delay(1000);
 		pros::delay(25);
 
 		/*driveL_train.move_voltage(3000);
@@ -663,24 +683,28 @@ void autonomous()
 		launchP.move_velocity(500);*/
 		angle = rotation_sensor.get_angle();
 
-		pros::delay(7000);
+		//pros::delay(7000);
 	
 		/*launchN.move_velocity(0);
 		launchP.move_velocity(0);*/
 		driveL_train.move_voltage(0);
 		driveR_train.move_voltage(0);
 
-		pros::delay(2000);
+		pros::delay(750);
 
 
 		Movement moves[] = 
 		{	
-			Movement(750, 7500, 1000), 	//10,90
-			Movement(7500, 7500, 0), 	
-			Movement(8000, 750, 550), 		
+			Movement(1000, 7500, 1200), 	//10,90
+			Movement(7500, 7500, 250), 	
+			Movement(7500, 1000, 650), 		
 			Movement(7500, 7500, 2000), 	
-			Movement(7500, 750, 800), 			
-			//Movement(75, 75, 1350),
+			Movement(8000, 3750, 1325), 			
+			//Movement(100000, 100000, 1000),
+			//Movement(-7500, -7500, 500),
+			//Movement(100000, 100000, 750),
+			//Movement(-7500, -7500, 750),
+
 		};
 	
 		//SideTurn(1, 70);
@@ -690,13 +714,49 @@ void autonomous()
 			printf("i=%d, sizeof%d \n", i,stepCount);
 			driveL_train.move_voltage(-1*moves[i].left);
 			driveR_train.move_voltage(moves[i].right);
+			if(i == 4)
+			{
+				pros::c::adi_digital_write(ExpansionPort1, HIGH);
+				//pros::c::adi_digital_write(ExpansionPort2, HIGH);
+				printf("expand \n");
+			}
 			pros::delay(moves[i].delay);
-			driveL_train.move_voltage(0);
-			driveR_train.move_voltage(0);
-			pros::delay(1000);
+
+
+
+
 		}
+
+		driveTrain(1500);
+		driveTrain(-1200);
+		turn(-90);
+		driveTrain(1000);
+		turn(45);
+		driveTrain(2500);
+		turn(135);
+		pros::c::adi_digital_write(ExpansionPort1, HIGH);
+		pros::c::adi_digital_write(ExpansionPort2, HIGH);
+		driveTrain(2000);
+
+		//this is untested
+		/*
+		pros::c::adi_digital_write(ExpansionPort1, LOW);
+		pros::c::adi_digital_write(ExpansionPort2, LOW);
+
+		driveTrain(-2000);
+		turn(-90);
+		driveTrain(650);
+		turn(90);
 		
-	//}
+		pros::c::adi_digital_write(ExpansionPort1, HIGH);
+		pros::c::adi_digital_write(ExpansionPort2, HIGH);
+
+		driveTrain(-2000);
+
+		*/
+
+		
+	}
 	
 	//driveTrain(1425);//oneblock
 
@@ -763,8 +823,7 @@ void opcontrol()
 
 	while(true)
 	{
-
-		//printf("POS=%.2F \n", getPos());
+		
 		/*USE TO CALIBRATE TURN SENSOR FOR LAUNCHER*/
 		
 		/*rotation_sensor.get_angle();
