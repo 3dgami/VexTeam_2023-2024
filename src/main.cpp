@@ -747,7 +747,7 @@ void autonomous()
 
 		driveL_train.move_voltage(3000);
 		driveR_train.move_voltage(-3000);
-		for(int count = 0; count < 45 && rotation_sensor.get_angle() >= UpPos; count++)
+		for(int i = 0; i < 45 && rotation_sensor.get_angle() >= UpPos; i++)
 		{
 			launchN.move_velocity(300);
 			launchP.move_velocity(300);
