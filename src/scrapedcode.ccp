@@ -165,3 +165,29 @@ void gyroTurn(int angle)
 
 		}*/
 			
+
+
+ for(int i = 0; i < 10 && rotation_sensor.get_angle() <= UpPos; i++)
+		{
+			launchN.move_velocity(300);
+			launchP.move_velocity(300);
+			pros::delay(10);
+			printf("i=%f, angle=%f \n", i, rotation_sensor.get_angle());
+		}
+		launchN.move_velocity(0);
+		launchP.move_velocity(0);
+
+
+			Movement moves[] = 
+		{	
+			Movement(1000, 7500, 1000), 	//10,90
+			Movement(7500, 7500, 175), 	
+			Movement(7500, 1000, 650), 		
+			Movement(7500, 7500, 2000), 	
+			Movement(8000, 3750, 1325), 			
+			//Movement(100000, 100000, 1000),
+			//Movement(-7500, -7500, 500),
+			//Movement(100000, 100000, 750),
+			//Movement(-7500, -7500, 750),
+
+		};
