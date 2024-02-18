@@ -191,3 +191,18 @@ void gyroTurn(int angle)
 			//Movement(-7500, -7500, 750),
 
 		};
+
+
+			launchN.move_voltage(0);
+			launchP.move_voltage(0);
+			if(angle > 8300)
+			{
+				angle = rotation_sensor.get_angle();
+				if(angle > ShootPos)
+				{
+					break;
+				}
+				launchN.move_velocity(300);
+				launchP.move_velocity(300);
+				pros::delay(5);
+			}
