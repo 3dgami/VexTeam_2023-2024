@@ -1,8 +1,7 @@
-#include "main.h"
+/*#include "main.h"
 #include "selection.h"
 #include "selection.ccp"
 #include "lemlib/api.hpp"
-#include "functions.cpp"
 
 pros::Rotation dead_left_x(7);
 pros::Rotation dead_right_x(8);
@@ -56,4 +55,4 @@ lemlib::ChassisController_t angularController {
 };
 
 // create the chassis
-lemlib::Chassis chassis(drivetrain, lateralController, angularController, sensors);
+lemlib::Chassis chassis(drivetrain, lateralController, angularController, sensors);*/

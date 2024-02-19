@@ -1,7 +1,6 @@
 #pragma once
 
-#include <string>
-
+#include <string>0
 //selector configuration
 #define HUE 360
 #define DEFAULT 0

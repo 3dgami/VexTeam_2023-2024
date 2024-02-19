@@ -79,9 +79,9 @@ void driveTrain(int distance, int timeout)
 
 	driveL_train.set_reversed(true);
 	int startPos = getPos();
-	double kp = 9.00;
+	double kp = 12.00;
 	double ki = 1.0;
-	double kd = -8.50;   /*derivitive should control and stop overshooting this can be done
+	double kd = -10.50;   /*derivitive should control and stop overshooting this can be done
 						  by having kd be negative or having a (P + I - D) for the output PS 
 						*/
 	double P;
@@ -738,24 +738,21 @@ void autonomous()
 	
 	if(selector::auton == 1)
 	{
+		//Inertial_Sensor.reset(true /*true*/);
 		 //run auton for Near Red 
-		pros::c::adi_digital_write(ExpansionHook, HIGH);
-		pros::delay(20);
-		driveTrain(-1000, 1000);
-		driveL_train.move_voltage(-5000);
-		driveR_train.move_voltage(-7000);
-		pros::delay(500);
-		driveTrain(300, 750);
-		pros::c::adi_digital_write(ExpansionHook, LOW);
+		driveTrain(1000, 1000);
+		//wing
+		driveTrain(-1000, 1000);\
+		//wing
+		driveTrain(1500, 2000);
+		AbsGyroTurn(45);
 		driveTrain(500, 1000);
-		pros::delay(20);
-		AbsGyroTurn(40);
-		driveTrain(-500, 1000);
-		driveTrain(300, 500);
-		AbsGyroTurn(225);
-		//pros::c::adi_digital_write(ExpansionPort1, HIGH);
-		//pros::c::adi_digital_write(ExpansionPort2, HIGH);
-		driveTrain(1300, 1000);
+		driveTrain(-200, 500);
+		AbsGyroTurn(321);
+		driveTrain(-3000, 1000);
+		//wing
+		
+
 	
 
 		
@@ -785,6 +782,7 @@ void autonomous()
 	if(selector::auton == 3)
 	{
 		 //do nothing 
+		 driveTrain(1000, 10000);
 	}
 
 	if(selector::auton == -1)
@@ -811,13 +809,13 @@ void autonomous()
 		driveTrain(-1000, 1000);
 		pros::delay(25);
 
-		driveL_train.move_voltage(100);
+		/*driveL_train.move_voltage(100);
 		driveR_train.move_voltage(-1000);
 		launchN.move_velocity(300);
 		launchP.move_velocity(300);
 	
 		pros::delay(28000);
-	
+		*/
 		launchN.move_velocity(0);
 		launchP.move_velocity(0);
 		driveL_train.move_voltage(0);
@@ -825,11 +823,11 @@ void autonomous()
 
 		driveTrain(900, 1000);
 		AbsGyroTurn(215);
-		driveTrain(1400, 1000);
+		driveTrain(1600, 1000);
 		AbsGyroTurn(270);
 		driveTrain(3900, 2000);
 
-		Movement moves[] = 
+		/*Movement moves[] = 
 		{		
 			Movement(8000, 4000, 1325), 			
 			//Movement(100000, 100000, 1000),
@@ -845,21 +843,19 @@ void autonomous()
 			printf("i=%d, sizeof%d \n", i,stepCount);
 			driveL_train.move_voltage(-1*moves[i].left);
 			driveR_train.move_voltage(moves[i].right);
-			if(i == 1)
-			{
-				pros::c::adi_digital_write(ExpansionPort1, HIGH);
-				//pros::c::adi_digital_write(ExpansionPort2, HIGH);
-				printf("expand \n");
-			}
 			pros::delay(moves[i].delay);
 
 
 
 
-		}
+		}*/
+
+		driveL_train.move_voltage(-1*8000);
+		driveR_train.move_voltage(4000);
+		pros::delay(1325);
 		
-		driveTrain(1100, 1000);
-		driveTrain(-1400, 1000);
+		driveTrain(800, 500);
+		driveTrain(-1700, 1000);
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 		AbsGyroTurn(45); //used to be turn(-90)
 		driveTrain(3000, 2000);
@@ -870,22 +866,24 @@ void autonomous()
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
 		pros::delay(10);
 
-		driveTrain(1600, 1000);
+		driveTrain(1500, 500);
 
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 		pros::c::adi_digital_write(ExpansionPort2, LOW);
 		pros::delay(10);
 
-		driveTrain(-1300, 1000);
+		driveTrain(-1300, 500);
 		AbsGyroTurn(0);
-		driveTrain(1600, 1000);
+		driveTrain(1600, 500);
 		AbsGyroTurn(260);
 		
 		pros::c::adi_digital_write(ExpansionPort1, HIGH);
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
 		pros::delay(10);
 
-		driveTrain(1900, 1000);
+		driveTrain(1950, 500);
+		driveTrain(-800, 500);
+		driveTrain(800, 500);
 
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 		pros::c::adi_digital_write(ExpansionPort2, LOW);
@@ -894,11 +892,27 @@ void autonomous()
 
 		AbsGyroTurn(0);
 
-		driveTrain(1500, 1000);
+		driveTrain(1600, 500);
 
-		AbsGyroTurn(245);
+		AbsGyroTurn(315);
 
-		driveTrain(1800, 1000);
+		driveTrain(2000, 1000);
+
+		pros::c::adi_digital_write(ExpansionPort1, HIGH);
+		pros::c::adi_digital_write(ExpansionPort2, HIGH);
+
+		AbsGyroTurn(225);
+
+		pros::c::adi_digital_write(ExpansionPort1, LOW);
+		pros::c::adi_digital_write(ExpansionPort2, LOW);
+
+		driveTrain(1100, 1000);
+
+		AbsGyroTurn(180);
+
+		driveTrain(1000, 500);
+
+		driveTrain(-1000, 500);
 
 		
 	}
@@ -1064,7 +1078,7 @@ void opcontrol()
 		{	
 			launchN.move_velocity(200);
 			launchP.move_velocity(200);
-			pros::delay(50);
+			pros::delay(300);
 			printf("first \n");
 			//pros::delay(50);// Ill try to lower this delay but the get_angle sometime doesnt get the end angle if no delay, but ill have to test
 			angle = rotation_sensor.get_angle();
@@ -1072,10 +1086,10 @@ void opcontrol()
 			while(angle < (ShootPos))
 			{	
 
-				if(angle > (ShootPos))
+				/*if(angle > (ShootPos))
 				{
 					break;
-				}
+				}*/
 				angle = rotation_sensor.get_angle();
 				launchN.move_velocity(300);
 				launchP.move_velocity(300);
