@@ -21,7 +21,7 @@
 
   }
   return;
-}*/
+}
 
 
 void gyroTurn(int angle)
@@ -118,7 +118,7 @@ void gyroTurn(int angle)
 		}
 
 //climb mech pneumatics (OPEN)
-		/*if(master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
+		if(master.get_digital(DIGITAL_R2) && master.get_digital(DIGITAL_L2))
 		{	
 			printf("count = 500 \n");
 
@@ -163,7 +163,7 @@ void gyroTurn(int angle)
 				printf("climbmotor negative \n");
 			}
 
-		}*/
+		}
 			
 
 
@@ -206,3 +206,21 @@ void gyroTurn(int angle)
 				launchP.move_velocity(300);
 				pros::delay(5);
 			}
+
+
+			if(selector::auton == -1)
+	{
+		 //run auton for Near Blue
+		
+	}
+
+	if(selector::auton == -2)
+	{
+		 //run auton for Far Blue
+	}
+
+	if(selector::auton == -3)
+	{
+		 //do nothing
+	}
+			*/
