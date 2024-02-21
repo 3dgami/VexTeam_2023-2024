@@ -1,6 +1,7 @@
 #include "main.h"
 #include "selection.h"
 #include "selection.ccp"
+#include "lemlibinit.cpp"
 
 //update all motor ports if needed
 pros::Controller master{CONTROLLER_MASTER};	
