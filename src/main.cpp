@@ -74,7 +74,7 @@ double getPos()
 	return (getLeftPos() + getRightPos()) / 2;
 }
 
-void driveTrain(int distance, int timeout, int SERT)
+void driveTrain(int distance, int timeout)
 {
 
 	driveL_train.set_reversed(true);
@@ -88,19 +88,19 @@ void driveTrain(int distance, int timeout, int SERT)
 	double I = 0;
 	double D;
 	int lastError = 0;
-	int errorTerm = 100000;
+	int errorTerm = 0;
 	int errorTotal = 0;
 	int sign;
 	int count = 0;
+	int SERT;
 	int SERT_count = 0;
 	bool SERT_bool = false;
-
 
 	sign = (distance < 0) ? -1 : 1;
 	
 	errorTerm = distance + startPos - getPos();
 
-	while (errorTerm > 1 or errorTerm < -1 and count < timeout and SERT_count < SERT)
+	while (errorTerm > 1 or errorTerm < -1 and count < timeout) // and SERT_count < SERTx
 	{
 		if(count > timeout or SERT_count > SERT)
 		{
@@ -132,8 +132,8 @@ void driveTrain(int distance, int timeout, int SERT)
 		lastError = errorTerm;
 		pros::delay(20);
 		
-		SERT_bool = (errorTerm < 15) ? true : false;
-		SERT_count = (SERT_bool = true) ? SERT_count + 20 : SERT_count;
+		//SERT_bool = (errorTerm < 15) ? true : false;
+		//SERT_count = (SERT_bool = true) ? SERT_count + 20 : SERT_count;
 		count += 20;
 
 	}
@@ -721,8 +721,6 @@ void autonomous()
 	
 	auto ExpansionPort1 = 'D';
 	auto ExpansionPort2 = 'E';
-	auto ExpansionIntakePort1 = 'G';
-	auto ExpansionIntakePort2 = 'H';
 	auto ExpansionHook = 'A';
 	int count;
 	int angle;
@@ -735,10 +733,6 @@ void autonomous()
 	pros::c::adi_pin_mode(ExpansionPort2, OUTPUT);
 	pros::c::adi_digital_write(ExpansionPort2, LOW);
 
-	pros::c::adi_pin_mode(ExpansionIntakePort1, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort1, LOW);
-	pros::c::adi_pin_mode(ExpansionIntakePort2, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort2, LOW);
 
 	pros::c::adi_pin_mode(ExpansionHook, OUTPUT);
 	pros::c::adi_digital_write(ExpansionHook, LOW);
@@ -748,18 +742,35 @@ void autonomous()
 	{
 		//Inertial_Sensor.reset(true /*true*/);
 		 //run auton for Near Red 
-		driveTrain(1000, 1000, 300);
+		pros::c::adi_digital_write(ExpansionPort1, HIGH);
+
+		pros::delay(200);
+
+		driveTrain(800, 1000);
 		//wing
-		driveTrain(-1000, 1000, 300);
+		pros::c::adi_digital_write(ExpansionHook, HIGH);
+		pros::delay(200);
+		driveTrain(-300, 1000);
+		pros::c::adi_digital_write(ExpansionPort1, LOW);
+
+		pros::delay(200);
+
+		AbsGyroTurn(0);
 		//wing
-		driveTrain(1500, 2000, 300);
+		pros::c::adi_digital_write(ExpansionHook, LOW);
+		driveTrain(950, 2000);
 		AbsGyroTurn(45);
-		driveTrain(500, 1000, 300);
-		driveTrain(-200, 500, 300);
+		driveTrain(1000, 250);
+		driveTrain(-150, 500);
 		AbsGyroTurn(321);
-		driveTrain(-3000, 1000, 300);
+		pros::c::adi_digital_write(ExpansionHook, HIGH);
+		pros::delay(100);
+		driveTrain(-2800, 2000);
+		driveTrain(-200, 2000);
 		//wing
-		
+		//pros::delay(100);
+		//pros::delay(100);
+
 
 	
 
@@ -771,15 +782,15 @@ void autonomous()
 	{
 		//run auton for Far Red 
 		//wing2
-		driveTrain(1500, 1000, 300);
+		driveTrain(-1500, 1000);
 		AbsGyroTurn(315);
-		driveTrain(500, 1000, 300);
-		driveTrain(-200, 1000, 300);
+		driveTrain(-500, 1000);
+		driveTrain(200, 1000);
 		//wing2
-		AbsGyroTurn(45);
-		driveTrain(-2800, 1000, 300);
+		AbsGyroTurn(225);
+		driveTrain(-3200, 1000);
 		AbsGyroTurn(135);
-		driveTrain(500, 500, 300);
+		driveTrain(500, 500);
 		//wing2
 		
 	}
@@ -787,34 +798,34 @@ void autonomous()
 	if(selector::auton == 3)
 	{
 		//do nothing 
-		
+	
 	}
 
 	if(selector::auton == 0)
 	{
 		 //skills
-		driveTrain(900, 1000, 300);
-		turn(80); //used to be 'turn(70)'
-		driveTrain(-1000, 1000, 300);
+		driveTrain(900, 1000);
+		turn(83); //used to be 'turn(70)'
+		driveTrain(-1000, 1000);
 		pros::delay(25);
 
-		/*driveL_train.move_voltage(100);
+		driveL_train.move_voltage(100);
 		driveR_train.move_voltage(-1000);
 		launchN.move_velocity(300);
 		launchP.move_velocity(300);
 	
 		pros::delay(28000);
-		*/
+		
 		launchN.move_velocity(0);
 		launchP.move_velocity(0);
 		driveL_train.move_voltage(0);
 		driveR_train.move_voltage(0);
 
-		driveTrain(900, 1000, 300);
+		driveTrain(900, 1000);
 		AbsGyroTurn(215);
-		driveTrain(1600, 1000, 300);
+		driveTrain(1700, 1000);
 		AbsGyroTurn(270);
-		driveTrain(3900, 2000, 600);
+		driveTrain(9000, 5000);// 3900
 
 		/*Movement moves[] = 
 		{		
@@ -843,11 +854,11 @@ void autonomous()
 		driveR_train.move_voltage(4000);
 		pros::delay(1325);
 		
-		driveTrain(800, 500, 300);
-		driveTrain(-1700, 1000, 300);
+		driveTrain(800, 500);
+		driveTrain(-1200, 1000);
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 		AbsGyroTurn(45); //used to be turn(-90)
-		driveTrain(3000, 2000, 600);
+		driveTrain(3000, 2000);
 		
 		AbsGyroTurn(270); // used to be turn(45)
 
@@ -855,37 +866,37 @@ void autonomous()
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
 		pros::delay(10);
 
-		driveTrain(1500, 500, 200);
+		driveTrain(1700, 500);
 
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 		pros::c::adi_digital_write(ExpansionPort2, LOW);
 		pros::delay(10);
 
-		driveTrain(-1300, 500, 200);
+		driveTrain(-1300, 500);
 		AbsGyroTurn(0);
-		driveTrain(1600, 500, 200);
+		driveTrain(1600, 500);
 		AbsGyroTurn(260);
 		
 		pros::c::adi_digital_write(ExpansionPort1, HIGH);
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
 		pros::delay(10);
 
-		driveTrain(1950, 500, 200);
-		driveTrain(-800, 500, 1200);
-		driveTrain(800, 500, 100);
+		driveTrain(2100, 500);
+		driveTrain(-800, 500);
+		driveTrain(1000, 500);
 
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 		pros::c::adi_digital_write(ExpansionPort2, LOW);
 		
-		driveTrain(-1500, 1000, 300);
+		driveTrain(-1700, 1000);
 
 		AbsGyroTurn(0);
 
-		driveTrain(1600, 500, 200);
+		driveTrain(1600, 500);
 
 		AbsGyroTurn(315);
 
-		driveTrain(2000, 1000, 300);
+		driveTrain(2000, 1000);
 
 		pros::c::adi_digital_write(ExpansionPort1, HIGH);
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
@@ -895,13 +906,13 @@ void autonomous()
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 		pros::c::adi_digital_write(ExpansionPort2, LOW);
 
-		driveTrain(1100, 1000, 300);
+		driveTrain(1100, 1000);
 
 		AbsGyroTurn(180);
 
-		driveTrain(1000, 500, 200);
+		driveTrain(1000, 500);
 
-		driveTrain(-1000, 500, 200);
+		driveTrain(-1000, 500);
 
 		
 	}
@@ -911,6 +922,7 @@ void autonomous()
 	//shut down all motors
 	driveR_train.move_voltage(0);
 	driveL_train.move_voltage(0);
+	pros::c::adi_digital_write(ExpansionHook, HIGH);
 	
 }
 
@@ -934,8 +946,6 @@ void opcontrol()
 	
 	auto ExpansionPort1 = 'D';
 	auto ExpansionPort2 = 'E';
-	auto ExpansionIntakePort1 = 'G';
-	auto ExpansionIntakePort2 = 'H';
 	auto ExpansionHook = 'A';
 	double POS = 0;
 
@@ -943,12 +953,6 @@ void opcontrol()
 	pros::c::adi_digital_write(ExpansionPort1, LOW);
 	pros::c::adi_pin_mode(ExpansionPort2, OUTPUT);
 	pros::c::adi_digital_write(ExpansionPort2, LOW);
-
-	pros::c::adi_pin_mode(ExpansionIntakePort1, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort1, LOW);
-	pros::c::adi_pin_mode(ExpansionIntakePort2, OUTPUT);
-	pros::c::adi_digital_write(ExpansionIntakePort2, LOW);
-
 	pros::c::adi_pin_mode(ExpansionHook, OUTPUT);
 	pros::c::adi_digital_write(ExpansionHook, LOW);
 
