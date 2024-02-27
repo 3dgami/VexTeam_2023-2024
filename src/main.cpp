@@ -10,7 +10,7 @@ pros::Motor launchN(14, true);
 pros::Motor launchP(15);
 pros::Motor right_front(20);
 pros::Motor left_front(10);
-pros::Motor left_back(1);//
+pros::Motor left_back(1);
 pros::Motor right_back(11);
 pros::Motor right_mid(6);
 pros::Motor left_mid(5);
@@ -719,7 +719,7 @@ void competition_initialize()
 void autonomous() 
 {
 	
-	auto ExpansionPort1 = 'D';
+	auto ExpansionPort1 = 'F';
 	auto ExpansionPort2 = 'E';
 	auto ExpansionHook = 'A';
 	int count;
@@ -746,11 +746,11 @@ void autonomous()
 
 		pros::delay(200);
 
-		driveTrain(800, 1000);
+		driveTrain(1200, 1000);
 		//wing
 		pros::c::adi_digital_write(ExpansionHook, HIGH);
 		pros::delay(200);
-		driveTrain(-300, 1000);
+		driveTrain(-700, 1000);
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 
 		pros::delay(200);
@@ -758,15 +758,25 @@ void autonomous()
 		AbsGyroTurn(0);
 		//wing
 		pros::c::adi_digital_write(ExpansionHook, LOW);
-		driveTrain(950, 2000);
-		AbsGyroTurn(45);
-		driveTrain(1000, 250);
-		driveTrain(-150, 500);
-		AbsGyroTurn(321);
+		driveTrain(1000, 2000);
+		AbsGyroTurn(215);
+		//driveTrain(-100, 500);
+		driveTrain(-2000, 750);
+		driveTrain(200, 1000);
+		driveTrain(-2000, 750);
+		pros::delay(300);
+		//pros::delay(1000);
+		driveTrain(200, 500);
+		AbsGyroTurn(310); //321
 		pros::c::adi_digital_write(ExpansionHook, HIGH);
 		pros::delay(100);
-		driveTrain(-2800, 2000);
-		driveTrain(-200, 2000);
+		driveTrain(-1800, 1000);
+		AbsGyroTurn(325);
+		driveTrain(-1500, 1000);
+		driveTrain(-200, 10000);
+		
+		/*driveTrain(-2800, 2000);
+		driveTrain(-200, 2000);*/
 		//wing
 		//pros::delay(100);
 		//pros::delay(100);
@@ -782,7 +792,7 @@ void autonomous()
 	{
 		//run auton for Far Red 
 		//wing2
-		driveTrain(-1500, 1000);
+		/*driveTrain(-1500, 1000);
 		AbsGyroTurn(315);
 		driveTrain(-500, 1000);
 		driveTrain(200, 1000);
@@ -790,8 +800,12 @@ void autonomous()
 		AbsGyroTurn(225);
 		driveTrain(-3200, 1000);
 		AbsGyroTurn(135);
-		driveTrain(500, 500);
+		driveTrain(500, 500);*/
 		//wing2
+		driveTrain(-2000, 1000);
+		driveTrain(-2000, 1000);
+		driveTrain(500, 1000);
+		driveTrain(-1000, 1000);
 		
 	}
 
@@ -804,8 +818,8 @@ void autonomous()
 	if(selector::auton == 0)
 	{
 		 //skills
-		driveTrain(900, 1000);
-		turn(83); //used to be 'turn(70)'
+		driveTrain(950, 1000);
+		turn(85); //used to be 'turn(70)'
 		driveTrain(-1000, 1000);
 		pros::delay(25);
 
@@ -825,7 +839,7 @@ void autonomous()
 		AbsGyroTurn(215);
 		driveTrain(1700, 1000);
 		AbsGyroTurn(270);
-		driveTrain(9000, 5000);// 3900
+		driveTrain(4000, 2000);// 3900
 
 		/*Movement moves[] = 
 		{		
@@ -866,7 +880,7 @@ void autonomous()
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
 		pros::delay(10);
 
-		driveTrain(1700, 500);
+		driveTrain(1800, 500);
 
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 		pros::c::adi_digital_write(ExpansionPort2, LOW);
@@ -881,14 +895,14 @@ void autonomous()
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
 		pros::delay(10);
 
-		driveTrain(2100, 500);
+		driveTrain(3200, 500);
 		driveTrain(-800, 500);
 		driveTrain(1000, 500);
 
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 		pros::c::adi_digital_write(ExpansionPort2, LOW);
 		
-		driveTrain(-1700, 1000);
+		driveTrain(-2700, 1000);
 
 		AbsGyroTurn(0);
 
@@ -896,7 +910,7 @@ void autonomous()
 
 		AbsGyroTurn(315);
 
-		driveTrain(2000, 1000);
+		driveTrain(2100, 1000);
 
 		pros::c::adi_digital_write(ExpansionPort1, HIGH);
 		pros::c::adi_digital_write(ExpansionPort2, HIGH);
@@ -906,7 +920,7 @@ void autonomous()
 		pros::c::adi_digital_write(ExpansionPort1, LOW);
 		pros::c::adi_digital_write(ExpansionPort2, LOW);
 
-		driveTrain(1100, 1000);
+		driveTrain(1300, 1000);
 
 		AbsGyroTurn(180);
 
@@ -944,7 +958,7 @@ void opcontrol()
 {
 	driveL_train.set_reversed(false);
 	
-	auto ExpansionPort1 = 'D';
+	auto ExpansionPort1 = 'F';
 	auto ExpansionPort2 = 'E';
 	auto ExpansionHook = 'A';
 	double POS = 0;
@@ -1014,8 +1028,8 @@ void opcontrol()
 		{
 			if(shootState == false)
 			{
-				launchN.move_velocity(150);
-				launchP.move_velocity(150);
+				launchN.move_velocity(300);
+				launchP.move_velocity(300);
 				shootState = true;
 			}
 			else

@@ -3,7 +3,7 @@
 #include <string>0
 //selector configuration
 #define HUE 360
-#define DEFAULT 1
+#define DEFAULT 0
 #define AUTONS "Front", "Back", "Do Nothing"
 
 namespace selector{
